@@ -458,8 +458,13 @@ export const useEPUBEditor = () => {
         const fragments = epubData.smilFiles.get(chapter.mediaOverlay) || [];
         if (fragments.length > 0) {
           const audioSrc = fragments[0].audioSrc;
+          // Find the SMIL file path from the manifest
+          const smilItem = Array.from(epubData.manifest.package.manifest[0].item).find(
+            (item: any) => item.$ && item.$.id === chapter.mediaOverlay
+          ) as any;
+          const smilPath = (smilItem && smilItem.$) ? smilItem.$.href : '';
+          
           // The audioSrc might be relative to the SMIL file, so we need to resolve it
-          const smilPath = epubData.chapters.find(c => c.id === selectedChapter)?.mediaOverlay || '';
           const smilUrl = new URL(smilPath, 'https://example.com');
           const resolvedAudioUrl = new URL(audioSrc, smilUrl);
           const resolvedAudioSrc = resolvedAudioUrl.pathname.substring(1);

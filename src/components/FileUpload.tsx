@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { Upload, FileText } from 'lucide-react';
+import { Upload, Feather, ShieldCheck } from 'lucide-react';
 
 interface FileUploadProps {
   onFileSelect: (file: File) => void;
@@ -32,7 +32,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect, isLoading 
       <div className="bg-white rounded-2xl shadow-xl p-12 max-w-2xl w-full dark:bg-gray-700 dark:text-white">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4 dark:bg-blue-900">
-            <FileText className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+            <Feather className="w-8 h-8 text-blue-600 dark:text-blue-400" />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2 dark:text-white">EPUB3 Media Overlay Editor</h1>
           <p className="text-gray-600 dark:text-gray-300">Upload an EPUB file to start editing media overlays and timing fragments</p>
@@ -63,6 +63,11 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect, isLoading 
             />
           </label>
         </div>
+
+        <p className="text-sm text-gray-500 text-center mt-4 dark:text-gray-400 flex items-center justify-center gap-2">
+          <ShieldCheck className="w-4 h-4 text-green-600 dark:text-green-500" />
+          Your files stay private - all processing is done locally in your browser  
+        </p>
 
         {isLoading && (
           <div className="mt-8">

@@ -43,6 +43,7 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
   const [showOffsetDialog, setShowOffsetDialog] = useState(false);
   const [offsetTime, setOffsetTime] = useState('');
   const [offsetValue, setOffsetValue] = useState('');
+  const [isWaveformLoading, setIsWaveformLoading] = useState(true);
   const audioUrlRef = useRef<string | null>(null);
 
   // Refs to hold the latest callbacks
@@ -73,6 +74,14 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
   useEffect(() => {
     if (!waveformRef.current) return;
 
+    // Cleanup previous instance
+    if (wavesurfer.current) {
+      wavesurfer.current.destroy();
+    }
+    if (audioUrlRef.current) {
+      URL.revokeObjectURL(audioUrlRef.current);
+    }
+
     const ws = WaveSurfer.create({
       container: waveformRef.current,
       waveColor: '#6B7280',
@@ -97,7 +106,11 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
       }
     });
 
-    ws.on('ready', () => { ws.zoom(zoomLevel); drawFragments(); });
+    ws.on('ready', () => { 
+      setIsWaveformLoading(false);
+      ws.zoom(zoomLevel); 
+      drawFragments(); 
+    });
     ws.on('play', () => setIsPlaying(true)); ws.on('pause', () => setIsPlaying(false)); ws.on('timeupdate', (time) => setCurrentTime(time));
 
     regionsPluginRef.current.on('region-updated', (region) => {
@@ -159,6 +172,11 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
 
     return () => { ws.destroy(); if (audioUrlRef.current) { URL.revokeObjectURL(audioUrlRef.current); } };
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [audioBlob]);
+
+  // Reset loading state when audio changes
+  useEffect(() => {
+    setIsWaveformLoading(true);
   }, [audioBlob]);
 
   //const lastAutomaticallySelectedFragmentId = useRef<string | null>(null);
@@ -359,7 +377,17 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
         </div>
       </div>
 
-      <div ref={waveformRef} className="w-full flex-1 min-h-[50px]" />
+      <div className="relative w-full flex-1 min-h-[50px]">
+        <div ref={waveformRef} className="w-full h-full" />
+        {isWaveformLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-50 dark:bg-gray-800 rounded">
+            <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+              <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-500 rounded-full animate-spin"></div>
+              <span className="text-sm">Loading waveform...</span>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Time Offset Dialog */}
       {showOffsetDialog && (

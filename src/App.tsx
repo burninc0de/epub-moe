@@ -6,6 +6,7 @@ import { WaveformViewer, WaveformViewerHandles } from './components/WaveformView
 import { FragmentEditor } from './components/FragmentEditor';
 import { useEPUBEditor } from './hooks/useEPUBEditor';
 import { Resizer } from './components/Resizer';
+import { Upload, Loader2 } from 'lucide-react';
 
 const WAVEFORM_HEIGHT_KEY = 'waveformHeight';
 const App: React.FC = () => {
@@ -18,6 +19,9 @@ const App: React.FC = () => {
   const [isCutToolActive, setIsCutToolActive] = useState(false);
   const [isHtmlEditMode, setIsHtmlEditMode] = useState(false);
   const [isBlockDisplay, setIsBlockDisplay] = useState(true);
+  const [isLoadingExport, setIsLoadingExport] = useState(false); // Export loading state
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const startResizing = useCallback((
     e: React.MouseEvent,
@@ -91,6 +95,26 @@ const App: React.FC = () => {
     setEpubData,
   } = useEPUBEditor();
 
+  const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.name.endsWith('.epub')) {
+      loadEPUB(file);
+    }
+  }, [loadEPUB]);
+
+  const handleLoadNewFile = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
+  const handleExportEPUB = useCallback(async () => {
+    setIsLoadingExport(true);
+    try {
+      await exportEPUB();
+    } finally {
+      setIsLoadingExport(false);
+    }
+  }, [exportEPUB]);
+
   if (error) {
     return (
       <div className="min-h-screen bg-red-50 flex items-center justify-center p-8 dark:bg-gray-900">
@@ -125,19 +149,58 @@ const App: React.FC = () => {
 
   return (
     <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900 dark:text-white overflow-hidden">
+      {/* Loading overlay */}
+      {isLoading && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-8 max-w-sm w-full mx-4 text-center shadow-xl">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600 dark:text-blue-400" />
+            <h3 className="text-lg font-semibold mb-2 dark:text-white">Loading EPUB</h3>
+            <p className="text-gray-600 dark:text-gray-300">Processing your file...</p>
+          </div>
+        </div>
+      )}
 
       {/* Top section: Three columns */}
-            <div className="flex-1 flex min-h-0">
+      <div className="flex-1 flex min-h-0">
         {/* Left Column (ChapterList) */}
         <div style={{ width: leftPanelWidth }} className="flex-shrink-0 h-full flex flex-col">
+  
           <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-            <h2 className="text-lg font-semibold truncate">{epubData.title}</h2>
-            <button 
-              onClick={exportEPUB}
-              className="mt-2 w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors dark:bg-blue-800 dark:hover:bg-blue-700"
-            >
-              Export EPUB
-            </button>
+            <div className="flex gap-2">
+              <button 
+                onClick={handleLoadNewFile}
+                disabled={isLoading}
+                className="w-10 h-10 flex items-center justify-center bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-600 dark:hover:bg-gray-500"
+                title="Load new EPUB"
+              >
+                {isLoading ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <Upload size={16} />
+                )}
+              </button>
+              <button 
+                onClick={handleExportEPUB}
+                disabled={isLoadingExport}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 dark:bg-blue-800 dark:hover:bg-blue-700 flex items-center justify-center gap-2"
+              >
+                {isLoadingExport ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    <span>Exporting...</span>
+                  </>
+                ) : (
+                  <span>Export EPUB</span>
+                )}
+              </button>
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".epub"
+              onChange={handleFileInput}
+              className="hidden"
+            />
           </div>
           <ChapterList
             chapters={epubData.chapters}

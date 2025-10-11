@@ -11,6 +11,10 @@ I built epub-moe because I needed surgical precision when creating German langua
 
 ![Main Workspace](screenshots/main-workspace.png)
 
+## Online Access
+
+You can access the latest build directly in your browser at [https://epub-moe.pages.dev/](https://epub-moe.pages.dev/) without any installation.
+
 ## What This Does Well
 
 - **Drag and drop audio regions**: Move boundaries directly on the waveform until timing is pixel-perfect

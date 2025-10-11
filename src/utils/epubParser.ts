@@ -94,7 +94,7 @@ export class EPUBParser {
     const manifest = this.opfData.package.manifest[0].item;
     
     for (const item of manifest) {
-      if (item.$['media-type'] === 'application/smil+xml') {
+      if (item.$ && item.$['media-type'] === 'application/smil+xml') {
         const smilPath = this.calculateBasePath() + item.$.href;
         const smilFile = this.zip.file(smilPath);
         
@@ -130,7 +130,7 @@ export class EPUBParser {
       
       if (text && audio) {
         fragments.push({
-          id: par.$.id || `fragment-${index}`,
+          id: (par.$ && par.$.id) || `fragment-${index}`,
           textSrc: text.$.src,
           audioSrc: audio.$.src,
           clipBegin: this.parseTime(audio.$['clipBegin'] || '0s'),
@@ -150,7 +150,7 @@ export class EPUBParser {
     const basePath = this.calculateBasePath();
 
     for (const item of manifest) {
-      if (item.$['media-type']?.startsWith('audio/')) {
+      if (item.$ && item.$['media-type']?.startsWith('audio/')) {
         const audioPath = basePath + item.$.href;
         const audioFile = this.zip.file(audioPath);
 
