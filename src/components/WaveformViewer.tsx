@@ -40,6 +40,8 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [zoomLevel, setZoomLevel] = useState(DEFAULT_ZOOM);
+  const [isDragging, setIsDragging] = useState(false);
+  const [draggedRegionId, setDraggedRegionId] = useState<string | null>(null);
   const [showOffsetDialog, setShowOffsetDialog] = useState(false);
   const [offsetTime, setOffsetTime] = useState('');
   const [offsetValue, setOffsetValue] = useState('');
@@ -57,17 +59,40 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
   const drawFragments = useCallback(() => {
     const regions = regionsPluginRef.current;
     if (!regions) return;
-    regions.clearRegions();
+
+    const existingRegions = regions.getRegions();
+    const fragmentIds = new Set(fragments.map(f => f.id));
+
+    // Remove regions that no longer exist
+    existingRegions.forEach(region => {
+      if (!fragmentIds.has(region.id)) {
+        region.remove();
+      }
+    });
+
+    // Add or update regions
     fragments.forEach((fragment) => {
+      const existingRegion = existingRegions.find(r => r.id === fragment.id);
       const isSelected = selectedFragment?.id === fragment.id;
-      regions.addRegion({
-        start: fragment.clipBegin,
-        end: fragment.clipEnd,
-        color: isSelected ? 'rgba(96, 165, 250, 0.3)' : 'rgba(16, 185, 129, 0.2)',
-        drag: true,
-        resize: true,
-        id: fragment.id,
-      });
+
+      if (existingRegion) {
+        // Update existing region
+        existingRegion.setOptions({
+          start: fragment.clipBegin,
+          end: fragment.clipEnd,
+          color: isSelected ? 'rgba(96, 165, 250, 0.3)' : 'rgba(16, 185, 129, 0.2)',
+        });
+      } else {
+        // Add new region - create region options once
+        regions.addRegion({
+          start: fragment.clipBegin,
+          end: fragment.clipEnd,
+          color: isSelected ? 'rgba(96, 165, 250, 0.3)' : 'rgba(16, 185, 129, 0.2)',
+          drag: true,
+          resize: true,
+          id: fragment.id,
+        });
+      }
     });
   }, [fragments, selectedFragment]);
 
@@ -87,9 +112,10 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
       waveColor: '#6B7280',
       progressColor: '#60A5FA',
       cursorColor: '#93C5FD',
-      barWidth: 2,
-      barRadius: 1,
-      normalize: true,
+      barWidth: 1,
+      barRadius: 0,
+      normalize: false,
+      backend: 'WebAudio',
       plugins: [RegionsPlugin.create()],
     });
 
@@ -114,6 +140,12 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
     ws.on('play', () => setIsPlaying(true)); ws.on('pause', () => setIsPlaying(false)); ws.on('timeupdate', (time) => setCurrentTime(time));
 
     regionsPluginRef.current.on('region-updated', (region) => {
+      // During drag, only update visually - don't trigger parent state updates
+      if (isDragging && draggedRegionId === region.id) {
+        return;
+      }
+
+      // This is for programmatic updates or clicks - handle normally
       // Find the index of the updated region
       const idx = fragmentsRef.current.findIndex(f => f.id === region.id);
       if (idx === -1) {
@@ -170,6 +202,75 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
       }
     });
 
+    // Track drag state using region-update event
+    let dragStartPositions: { [key: string]: { start: number, end: number } } = {};
+    let dragUpdateScheduled = false;
+    regionsPluginRef.current.on('region-update', (region) => {
+      if (!dragStartPositions[region.id]) {
+        // Drag started
+        dragStartPositions[region.id] = { start: region.start, end: region.end };
+        setIsDragging(true);
+        setDraggedRegionId(region.id);
+      }
+      // During drag, throttle visual updates using requestAnimationFrame
+      if (!dragUpdateScheduled) {
+        dragUpdateScheduled = true;
+        requestAnimationFrame(() => {
+          dragUpdateScheduled = false;
+          // Visual update could be added here if needed, but WaveSurfer handles it automatically
+        });
+      }
+    });
+
+    regionsPluginRef.current.on('region-updated', (region) => {
+      // Drag ended - now update parent state
+      if (dragStartPositions[region.id]) {
+        delete dragStartPositions[region.id];
+        setIsDragging(false);
+        setDraggedRegionId(null);
+
+        // On drag end, update the parent state with final positions
+        const idx = fragmentsRef.current.findIndex(f => f.id === region.id);
+        if (idx !== -1) {
+          const prevFragment = fragmentsRef.current[idx];
+          const prevStart = prevFragment.clipBegin;
+          const prevEnd = prevFragment.clipEnd;
+
+          // Update current region data
+          onFragmentUpdateRef.current(region.id, { clipBegin: region.start, clipEnd: region.end });
+          fragmentsRef.current[idx].clipBegin = region.start;
+          fragmentsRef.current[idx].clipEnd = region.end;
+
+          // Helper to update region visually
+          const updateRegionVisual = (id: string, opts: { start?: number, end?: number }) => {
+            const regions = regionsPluginRef.current?.getRegions();
+            const r = regions?.find(r => r.id === id);
+            if (r && typeof r.setOptions === 'function') {
+              r.setOptions(opts);
+            }
+          };
+
+          // Handle adjacent region adjustments only on drag end
+          if (Math.abs(region.end - prevEnd) > REGION_EPSILON && idx < fragmentsRef.current.length - 1) {
+            const next = fragmentsRef.current[idx + 1];
+            if (next.clipBegin !== region.end) {
+              next.clipBegin = region.end;
+              onFragmentUpdateRef.current(next.id, { clipBegin: region.end });
+              updateRegionVisual(next.id, { start: region.end });
+            }
+          }
+          if (Math.abs(region.start - prevStart) > REGION_EPSILON && idx > 0) {
+            const prev = fragmentsRef.current[idx - 1];
+            if (prev.clipEnd !== region.start) {
+              prev.clipEnd = region.start;
+              onFragmentUpdateRef.current(prev.id, { clipEnd: region.start });
+              updateRegionVisual(prev.id, { end: region.start });
+            }
+          }
+        }
+      }
+    });
+
     return () => { ws.destroy(); if (audioUrlRef.current) { URL.revokeObjectURL(audioUrlRef.current); } };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [audioBlob]);
@@ -190,7 +291,40 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
     const container = waveformRef.current;
     if (!container) return;
 
-    const handleWheel = (e: WheelEvent) => { e.preventDefault(); const zoomDirection = e.deltaY > 0 ? -1 : 1; const zoomFactor = 0.5; setZoomLevel(currentZoom => { const newZoom = currentZoom * Math.pow(zoomFactor, zoomDirection); const clampedZoom = Math.max(MIN_ZOOM, Math.min(newZoom, MAX_ZOOM)); if (wavesurfer.current && Math.abs(clampedZoom - currentZoom) > 0.01) { wavesurfer.current.zoom(clampedZoom); } return clampedZoom; }); };
+    let zoomLevelRef = zoomLevel; // Keep a ref for immediate updates
+    const ZOOM_SENSITIVITY = 0.08; // Even more responsive
+    let lastStateUpdate = 0;
+    const STATE_UPDATE_THROTTLE = 16; // Update React state at ~60fps
+
+    let lastZoomUpdate = 0;
+
+    const handleWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return;
+
+      e.preventDefault();
+
+      const now = performance.now();
+
+      // Calculate new zoom level immediately
+      const zoomDelta = -e.deltaY * ZOOM_SENSITIVITY;
+      zoomLevelRef = Math.max(MIN_ZOOM, Math.min(zoomLevelRef + zoomDelta, MAX_ZOOM));
+
+      // Update WaveSurfer zoom with smart throttling - more frequent during rapid scrolling
+      const timeSinceLastZoom = now - lastZoomUpdate;
+      const shouldUpdate = timeSinceLastZoom > 32 || // ~30fps minimum
+                           (timeSinceLastZoom > 16 && Math.abs(zoomDelta) > 1); // Faster for large changes
+
+      if (shouldUpdate) {
+        wavesurfer.current?.zoom(zoomLevelRef);
+        lastZoomUpdate = now;
+      }
+
+      // Throttle React state updates to prevent excessive re-renders
+      if (now - lastStateUpdate > STATE_UPDATE_THROTTLE) {
+        setZoomLevel(zoomLevelRef);
+        lastStateUpdate = now;
+      }
+    };
 
     container.addEventListener('wheel', handleWheel, { passive: false });
 
@@ -341,10 +475,10 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Audio Waveform</h3>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <button onClick={() => handleZoom(zoomLevel * 1.5)} className="p-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
+            <button onClick={() => handleZoom(zoomLevel * 1.2)} className="p-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
               <ZoomIn className="w-4 h-4" />
             </button>
-            <button onClick={() => handleZoom(zoomLevel / 1.5)} className="p-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
+            <button onClick={() => handleZoom(zoomLevel / 1.2)} className="p-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
               <ZoomOut className="w-4 h-4" />
             </button>
             <button onClick={() => handleZoom(DEFAULT_ZOOM)} className="p-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
@@ -378,7 +512,16 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
       </div>
 
       <div className="relative w-full flex-1 min-h-[50px]">
-        <div ref={waveformRef} className="w-full h-full" />
+        <div 
+          ref={waveformRef} 
+          className="w-full h-full" 
+          style={{ 
+            minHeight: '100%', 
+            position: 'relative',
+            overflowX: 'auto',
+            overflowY: 'hidden'
+          }}
+        />
         {isWaveformLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-50 dark:bg-gray-800 rounded">
             <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
