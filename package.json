@@ -1,7 +1,7 @@
 {
   "name": "epub-moe",
   "description": "A React-based tool for fine-tuning synchronized text and audio in EPUB files with media overlays",
-  "version": "1.0.0",
+  "version": "1.0.5",
   "type": "module",
   "author": "Andre Klein",
   "license": "MIT",

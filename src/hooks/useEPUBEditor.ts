@@ -6,6 +6,9 @@ import { buildSMIL } from '../utils/smilBuilder';
 import { EPUBData, EPUBChapter, SMILFragment } from '../types/epub';
 
 const LAST_CHAPTER_KEY = 'nuTobi:lastSelectedChapter';
+const MIN_FRAGMENT_DURATION = 0.01;
+const MIN_FORCE_ALIGN_SEGMENT_DURATION = 0.12;
+const MIN_TEXT_SPLIT_DURATION = 0.12;
 
 export const useEPUBEditor = () => {
   const [epubData, setEpubData] = useState<EPUBData | null>(null);
@@ -55,137 +58,148 @@ export const useEPUBEditor = () => {
   }, [selectedChapter]);
 
   const updateFragment = useCallback((fragmentId: string, updates: Partial<SMILFragment>) => {
-    if (!epubData) return;
-
-    const newSmilFiles = new Map(epubData.smilFiles);
-    
-    for (const [smilId, fragments] of newSmilFiles) {
-      const fragmentIndex = fragments.findIndex(f => f.id === fragmentId);
-      if (fragmentIndex !== -1) {
-        const updatedFragments = [...fragments];
-        updatedFragments[fragmentIndex] = { ...updatedFragments[fragmentIndex], ...updates };
-        
-        // If timing was updated, recalculate order to maintain chronological order
-        if (updates.clipBegin !== undefined || updates.clipEnd !== undefined) {
-          const fragmentsWithCorrectOrder = updatedFragments
-            .sort((a, b) => a.clipBegin - b.clipBegin)
-            .map((frag, index) => ({
-              ...frag,
-              order: index
-            }));
-          newSmilFiles.set(smilId, fragmentsWithCorrectOrder);
-        } else {
-          newSmilFiles.set(smilId, updatedFragments);
-        }
-        break;
-      }
-    }
-
-    setEpubData({ ...epubData, smilFiles: newSmilFiles });
-
-    // Update selected fragment if it's the one being edited
-    if (selectedFragment?.id === fragmentId) {
-      setSelectedFragment({ ...selectedFragment, ...updates });
-    }
-  }, [epubData, selectedFragment]);
-
-  const deleteFragment = useCallback((fragmentId: string) => {
-    if (!epubData) return;
-
-    const newSmilFiles = new Map(epubData.smilFiles);
-    
-    for (const [smilId, fragments] of newSmilFiles) {
-      const fragmentIndex = fragments.findIndex(f => f.id === fragmentId);
-      if (fragmentIndex !== -1) {
-        const updatedFragments = fragments.filter(f => f.id !== fragmentId);
-        
-        // Recalculate order values to maintain sequential order after deletion
-        const fragmentsWithCorrectOrder = updatedFragments
-          .sort((a, b) => a.clipBegin - b.clipBegin)
-          .map((frag, index) => ({
-            ...frag,
-            order: index
-          }));
-        
-        newSmilFiles.set(smilId, fragmentsWithCorrectOrder);
-        break;
-      }
-    }
-
-    setEpubData({ ...epubData, smilFiles: newSmilFiles });
-    
-    if (selectedFragment?.id === fragmentId) {
-      setSelectedFragment(null);
-    }
-  }, [epubData, selectedFragment]);
-
-  const splitFragment = useCallback((fragmentId: string, splitTime: number) => {
-    if (!epubData) return;
-
-    const newSmilFiles = new Map(epubData.smilFiles);
-    
-    for (const [smilId, fragments] of newSmilFiles) {
-      const fragmentIndex = fragments.findIndex(f => f.id === fragmentId);
-      if (fragmentIndex !== -1) {
-        const originalFragment = fragments[fragmentIndex];
-        const firstFragment = {
-          ...originalFragment,
-          clipEnd: splitTime,
-          id: `${originalFragment.id}_part1`
-        };
-        const secondFragment = {
-          ...originalFragment,
-          clipBegin: splitTime,
-          id: `${originalFragment.id}_part2`,
-          order: originalFragment.order + 0.1
-        };
-        
-        const updatedFragments = [
-          ...fragments.slice(0, fragmentIndex),
-          firstFragment,
-          secondFragment,
-          ...fragments.slice(fragmentIndex + 1)
-        ];
-        
-        // Recalculate order values for all fragments to ensure chronological order
-        const fragmentsWithCorrectOrder = updatedFragments
-          .sort((a, b) => a.clipBegin - b.clipBegin)
-          .map((fragment, index) => ({
-            ...fragment,
-            order: index
-          }));
-        
-        newSmilFiles.set(smilId, fragmentsWithCorrectOrder);
-        break;
-      }
-    }
-
-    setEpubData({ ...epubData, smilFiles: newSmilFiles });
-  }, [epubData]);
-
-  const splitFragmentByText = useCallback((fragmentId: string, splitIndex: number) => {
     if (!epubData || !selectedChapter) return;
 
     const chapter = epubData.chapters.find(c => c.id === selectedChapter);
-    if (!chapter || !chapter.mediaOverlay) return;
+    if (!chapter?.mediaOverlay) return;
 
-    const smilFileId = chapter.mediaOverlay;
-    const fragments = epubData.smilFiles.get(smilFileId);
+    const smilId = chapter.mediaOverlay;
+    const fragments = epubData.smilFiles.get(smilId);
+    if (!fragments) return;
+
+    const fragmentIndex = fragments.findIndex(f => f.id === fragmentId);
+    if (fragmentIndex === -1) return;
+
+    const updatedFragments = [...fragments];
+    updatedFragments[fragmentIndex] = { ...updatedFragments[fragmentIndex], ...updates };
+
+    const newSmilFiles = new Map(epubData.smilFiles);
+
+    if (updates.clipBegin !== undefined || updates.clipEnd !== undefined) {
+      const fragmentsWithCorrectOrder = updatedFragments
+        .sort((a, b) => a.clipBegin - b.clipBegin)
+        .map((frag, index) => ({
+          ...frag,
+          order: index
+        }));
+      newSmilFiles.set(smilId, fragmentsWithCorrectOrder);
+    } else {
+      newSmilFiles.set(smilId, updatedFragments);
+    }
+
+    setEpubData({ ...epubData, smilFiles: newSmilFiles });
+
+    if (selectedFragment?.id === fragmentId) {
+      setSelectedFragment({ ...selectedFragment, ...updates });
+    }
+  }, [epubData, selectedChapter, selectedFragment]);
+
+  const deleteFragment = useCallback((fragmentId: string) => {
+    if (!epubData || !selectedChapter) return;
+
+    const chapter = epubData.chapters.find(c => c.id === selectedChapter);
+    if (!chapter?.mediaOverlay) return;
+
+    const smilId = chapter.mediaOverlay;
+    const fragments = epubData.smilFiles.get(smilId);
+    if (!fragments) return;
+
+    const fragmentIndex = fragments.findIndex(f => f.id === fragmentId);
+    if (fragmentIndex === -1) return;
+
+    const updatedFragments = fragments.filter(f => f.id !== fragmentId);
+
+    const fragmentsWithCorrectOrder = updatedFragments
+      .sort((a, b) => a.clipBegin - b.clipBegin)
+      .map((frag, index) => ({
+        ...frag,
+        order: index
+      }));
+
+    const newSmilFiles = new Map(epubData.smilFiles);
+    newSmilFiles.set(smilId, fragmentsWithCorrectOrder);
+
+    setEpubData({ ...epubData, smilFiles: newSmilFiles });
+
+    if (selectedFragment?.id === fragmentId) {
+      setSelectedFragment(null);
+    }
+  }, [epubData, selectedChapter, selectedFragment]);
+
+  const splitFragment = useCallback((fragmentId: string, splitTime: number) => {
+    if (!epubData || !selectedChapter) return;
+
+    const chapter = epubData.chapters.find(c => c.id === selectedChapter);
+    if (!chapter?.mediaOverlay) return;
+
+    const smilId = chapter.mediaOverlay;
+    const fragments = epubData.smilFiles.get(smilId);
     if (!fragments) return;
 
     const fragmentIndex = fragments.findIndex(f => f.id === fragmentId);
     if (fragmentIndex === -1) return;
 
     const originalFragment = fragments[fragmentIndex];
+    const firstFragment = {
+      ...originalFragment,
+      clipEnd: splitTime,
+      id: `${originalFragment.id}_part1`
+    };
+    const secondFragment = {
+      ...originalFragment,
+      clipBegin: splitTime,
+      id: `${originalFragment.id}_part2`,
+      order: originalFragment.order + 0.1
+    };
+
+    const updatedFragments = [
+      ...fragments.slice(0, fragmentIndex),
+      firstFragment,
+      secondFragment,
+      ...fragments.slice(fragmentIndex + 1)
+    ];
+
+    const fragmentsWithCorrectOrder = updatedFragments
+      .sort((a, b) => a.clipBegin - b.clipBegin)
+      .map((fragment, index) => ({
+        ...fragment,
+        order: index
+      }));
+
+    const newSmilFiles = new Map(epubData.smilFiles);
+    newSmilFiles.set(smilId, fragmentsWithCorrectOrder);
+
+    setEpubData({ ...epubData, smilFiles: newSmilFiles });
+  }, [epubData, selectedChapter]);
+
+  const splitFragmentByText = useCallback((fragmentId: string, splitIndex: number): boolean => {
+    if (!epubData || !selectedChapter) return false;
+
+    const chapter = epubData.chapters.find(c => c.id === selectedChapter);
+    if (!chapter || !chapter.mediaOverlay) return false;
+
+    const smilFileId = chapter.mediaOverlay;
+    const fragments = epubData.smilFiles.get(smilFileId);
+    if (!fragments) return false;
+
+    const fragmentIndex = fragments.findIndex(f => f.id === fragmentId);
+    if (fragmentIndex === -1) return false;
+
+    const originalFragment = fragments[fragmentIndex];
+    const originalDuration = originalFragment.clipEnd - originalFragment.clipBegin;
+    if (!Number.isFinite(originalDuration) || originalDuration < MIN_TEXT_SPLIT_DURATION * 2) {
+      return false;
+    }
+
     const textSrcId = originalFragment.textSrc.split('#')[1];
-    if (!textSrcId) return;
+    if (!textSrcId) return false;
 
     // 1. Modify chapter HTML content
     const parser = new DOMParser();
     const doc = parser.parseFromString(chapter.content, 'application/xhtml+xml');
     const originalElement = doc.getElementById(textSrcId);
 
-    if (!originalElement) return;
+    if (!originalElement) return false;
     // Instead of splitting by textContent, split by child nodes to preserve all HTML elements
     let charCount = 0;
     const nodes1: ChildNode[] = [];
@@ -263,6 +277,10 @@ export const useEPUBEditor = () => {
       }
     }
 
+    if (!foundSplit || !text1.trim() || !text2.trim()) {
+      return false;
+    }
+
     const id1 = `frag-split-${Date.now()}-1`;
     const id2 = `frag-split-${Date.now()}-2`;
 
@@ -290,7 +308,16 @@ export const useEPUBEditor = () => {
 
     // 2. Modify SMIL fragments
     const duration = originalFragment.clipEnd - originalFragment.clipBegin;
-    const splitTime = originalFragment.clipBegin + (duration * (splitIndex / (originalText.length || 1)));
+    const splitRatio = Math.min(1, Math.max(0, text1.length / (originalText.length || 1)));
+    let splitTime = originalFragment.clipBegin + (duration * splitRatio);
+    const minSplitTime = originalFragment.clipBegin + MIN_TEXT_SPLIT_DURATION;
+    const maxSplitTime = originalFragment.clipEnd - MIN_TEXT_SPLIT_DURATION;
+
+    if (minSplitTime >= maxSplitTime) {
+      return false;
+    }
+
+    splitTime = Math.min(maxSplitTime, Math.max(minSplitTime, splitTime));
 
     const firstFragment: SMILFragment = {
       ...originalFragment,
@@ -343,49 +370,52 @@ export const useEPUBEditor = () => {
     });
 
     setSelectedFragment(firstFragment); // Select the first new fragment
+    return true;
 
   }, [epubData, selectedChapter]);
 
   const addFragment = useCallback((afterId: string, newFragment: Partial<SMILFragment>) => {
-    if (!epubData) return;
+    if (!epubData || !selectedChapter) return;
+
+    const chapter = epubData.chapters.find(c => c.id === selectedChapter);
+    if (!chapter?.mediaOverlay) return;
+
+    const smilId = chapter.mediaOverlay;
+    const fragments = epubData.smilFiles.get(smilId);
+    if (!fragments) return;
+
+    const fragmentIndex = fragments.findIndex(f => f.id === afterId);
+    if (fragmentIndex === -1) return;
+
+    const fragment: SMILFragment = {
+      id: `${smilId}::fragment_${Date.now()}`,
+      textSrc: '',
+      audioSrc: '',
+      clipBegin: 0,
+      clipEnd: 1,
+      text: '',
+      order: fragments[fragmentIndex].order + 0.1,
+      ...newFragment
+    };
+
+    const updatedFragments = [
+      ...fragments.slice(0, fragmentIndex + 1),
+      fragment,
+      ...fragments.slice(fragmentIndex + 1)
+    ];
+
+    const fragmentsWithCorrectOrder = updatedFragments
+      .sort((a, b) => a.clipBegin - b.clipBegin)
+      .map((frag, index) => ({
+        ...frag,
+        order: index
+      }));
 
     const newSmilFiles = new Map(epubData.smilFiles);
-    
-    for (const [smilId, fragments] of newSmilFiles) {
-      const fragmentIndex = fragments.findIndex(f => f.id === afterId);
-      if (fragmentIndex !== -1) {
-        const fragment: SMILFragment = {
-          id: `fragment_${Date.now()}`,
-          textSrc: '',
-          audioSrc: '',
-          clipBegin: 0,
-          clipEnd: 1,
-          text: '',
-          order: fragments[fragmentIndex].order + 0.1,
-          ...newFragment
-        };
-        
-        const updatedFragments = [
-          ...fragments.slice(0, fragmentIndex + 1),
-          fragment,
-          ...fragments.slice(fragmentIndex + 1)
-        ];
-        
-        // Recalculate order values to ensure chronological order
-        const fragmentsWithCorrectOrder = updatedFragments
-          .sort((a, b) => a.clipBegin - b.clipBegin)
-          .map((frag, index) => ({
-            ...frag,
-            order: index
-          }));
-        
-        newSmilFiles.set(smilId, fragmentsWithCorrectOrder);
-        break;
-      }
-    }
+    newSmilFiles.set(smilId, fragmentsWithCorrectOrder);
 
     setEpubData({ ...epubData, smilFiles: newSmilFiles });
-  }, [epubData]);
+  }, [epubData, selectedChapter]);
 
   const applyTimeOffset = useCallback((fromTime: number, offsetSeconds: number) => {
     if (!epubData || !selectedChapter) return;
@@ -431,6 +461,102 @@ export const useEPUBEditor = () => {
     // Update selected fragment if it was affected
     if (selectedFragment && selectedFragment.clipBegin >= fromTime) {
       const updatedSelected = fragmentsWithCorrectOrder.find(f => f.id === selectedFragment.id);
+      if (updatedSelected) {
+        setSelectedFragment(updatedSelected);
+      }
+    }
+  }, [epubData, selectedChapter, selectedFragment]);
+
+  const forceNonOverlappingFragments = useCallback((audioDuration?: number) => {
+    if (!epubData || !selectedChapter) return;
+
+    const chapter = epubData.chapters.find(c => c.id === selectedChapter);
+    if (!chapter?.mediaOverlay) return;
+
+    const smilFileId = chapter.mediaOverlay;
+    const fragments = epubData.smilFiles.get(smilFileId);
+    if (!fragments || fragments.length === 0) return;
+
+    const parser = new DOMParser();
+    const chapterDoc = parser.parseFromString(chapter.content, 'application/xhtml+xml');
+    const textIdOrder = new Map<string, number>();
+    chapterDoc.querySelectorAll('[id]').forEach((element, index) => {
+      textIdOrder.set(element.id, index);
+    });
+
+    const getTextOrderIndex = (fragment: SMILFragment, fallbackIndex: number): number => {
+      const textId = fragment.textSrc.split('#')[1] || '';
+      const domIndex = textIdOrder.get(textId);
+      if (domIndex !== undefined) return domIndex;
+      return Number.isFinite(fragment.order) ? fragment.order : fallbackIndex;
+    };
+
+    const ordered = [...fragments]
+      .map((fragment, originalIndex) => ({ fragment, originalIndex }))
+      .sort((a, b) => {
+        const aTextOrder = getTextOrderIndex(a.fragment, a.originalIndex);
+        const bTextOrder = getTextOrderIndex(b.fragment, b.originalIndex);
+        if (aTextOrder !== bTextOrder) {
+          return aTextOrder - bTextOrder;
+        }
+
+        if (a.fragment.order !== b.fragment.order) {
+          return a.fragment.order - b.fragment.order;
+        }
+
+        return a.originalIndex - b.originalIndex;
+      })
+      .map(({ fragment }) => fragment);
+
+    const targetDuration = Number.isFinite(audioDuration) && (audioDuration || 0) > 0
+      ? (audioDuration as number)
+      : ordered.reduce((maxEnd, fragment) => {
+          const end = Number.isFinite(fragment.clipEnd) ? fragment.clipEnd : 0;
+          return Math.max(maxEnd, end);
+        }, 0);
+
+    const segmentCount = ordered.length;
+    const minDuration = segmentCount > 0
+      ? Math.min(MIN_FORCE_ALIGN_SEGMENT_DURATION, targetDuration / segmentCount)
+      : 0;
+    const reservedDuration = minDuration * segmentCount;
+    const distributableDuration = Math.max(0, targetDuration - reservedDuration);
+
+    const weights = ordered.map(fragment => {
+      const textId = fragment.textSrc.split('#')[1] || '';
+      const element = textId ? chapterDoc.getElementById(textId) : null;
+      const textLength = (element?.textContent || '').replace(/\s+/g, ' ').trim().length;
+      return Math.max(1, textLength);
+    });
+    const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+
+    const scaledDurations = weights.map(weight => {
+      if (totalWeight <= 0) return minDuration;
+      return minDuration + (weight / totalWeight) * distributableDuration;
+    });
+
+    let cursor = 0;
+    const normalized = ordered.map((fragment, index) => {
+      const clipBegin = cursor;
+      const clipEnd = index === ordered.length - 1
+        ? targetDuration
+        : Math.min(targetDuration, cursor + Math.max(MIN_FRAGMENT_DURATION, scaledDurations[index]));
+      cursor = clipEnd;
+
+      return {
+        ...fragment,
+        clipBegin,
+        clipEnd,
+        order: index
+      };
+    });
+
+    const newSmilFiles = new Map(epubData.smilFiles);
+    newSmilFiles.set(smilFileId, normalized);
+    setEpubData({ ...epubData, smilFiles: newSmilFiles });
+
+    if (selectedFragment) {
+      const updatedSelected = normalized.find(f => f.id === selectedFragment.id);
       if (updatedSelected) {
         setSelectedFragment(updatedSelected);
       }
@@ -585,7 +711,7 @@ export const useEPUBEditor = () => {
         const chapterDuration = calculateTotalDuration(validFragments);
         mediaDurations.set(id, chapterDuration);
 
-        const newSmilContent = buildSMIL(validFragments, textRef, seqId);
+        const newSmilContent = buildSMIL(validFragments, textRef, seqId, id);
         newZip.file(smilPath, newSmilContent);
       }
     }
@@ -639,6 +765,7 @@ export const useEPUBEditor = () => {
     splitFragmentByText,
     addFragment,
     applyTimeOffset,
+    forceNonOverlappingFragments,
     getCurrentChapter,
     getCurrentFragments,
     currentAudioBlob,

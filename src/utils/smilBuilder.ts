@@ -1,7 +1,15 @@
 import { SMILFragment } from '../types/epub';
 import { create } from 'xmlbuilder2';
 
-export const buildSMIL = (fragments: SMILFragment[], textRef: string, seqId: string): string => {
+const getExportParId = (fragmentId: string, smilId: string): string => {
+  const prefix = `${smilId}::`;
+  if (fragmentId.startsWith(prefix)) {
+    return fragmentId.slice(prefix.length);
+  }
+  return fragmentId;
+};
+
+export const buildSMIL = (fragments: SMILFragment[], textRef: string, seqId: string, smilId: string): string => {
   const root = create({ version: '1.0', encoding: 'UTF-8' })
     .ele('smil', {
       xmlns: 'http://www.w3.org/ns/SMIL',
@@ -21,9 +29,10 @@ export const buildSMIL = (fragments: SMILFragment[], textRef: string, seqId: str
       const textSrc = fragment.textSrc.split('#')[0];
       const textId = fragment.textSrc.split('#')[1] || '';
       const audioSrc = fragment.audioSrc.split('#')[0];
+      const parId = fragment.id ? getExportParId(fragment.id, smilId) : `par${fragments.indexOf(fragment) + 1}`;
 
       const par = root.ele('par', {
-        id: fragment.id || `par${fragments.indexOf(fragment) + 1}`
+        id: parId
       });
 
       par.ele('text', {

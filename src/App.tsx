@@ -88,6 +88,7 @@ const App: React.FC = () => {
     addFragment,
     splitFragmentByText,
     applyTimeOffset,
+    forceNonOverlappingFragments,
     getCurrentChapter,
     getCurrentFragments,
     currentAudioBlob,
@@ -275,6 +276,7 @@ const App: React.FC = () => {
               selectedFragment={selectedFragment}
               onFragmentUpdate={updateFragment}
               onApplyTimeOffset={applyTimeOffset}
+              onForceNonOverlapping={(audioDuration) => forceNonOverlappingFragments(audioDuration)}
               viewerHeight={waveformHeight}
             />
           </div>

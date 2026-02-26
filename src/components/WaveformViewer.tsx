@@ -2,7 +2,7 @@ const REGION_EPSILON = 0.01; // 10ms tolerance for floating point imprecision
 import { useEffect, useRef, useState, useCallback, forwardRef, useImperativeHandle } from 'react';
 import WaveSurfer from 'wavesurfer.js';
 import RegionsPlugin from 'wavesurfer.js/dist/plugins/regions.js';
-import { Play, Pause, Square, ZoomIn, ZoomOut, RotateCcw, Clock } from 'lucide-react';
+import { Play, Pause, Square, ZoomIn, ZoomOut, RotateCcw, Clock, Magnet, AlertTriangle } from 'lucide-react';
 import { SMILFragment } from '../types/epub';
 
 interface WaveformViewerProps {
@@ -12,6 +12,7 @@ interface WaveformViewerProps {
   selectedFragment: SMILFragment | null;
   onFragmentUpdate: (fragmentId: string, updates: Partial<SMILFragment>) => void;
   onApplyTimeOffset: (fromTime: number, offsetSeconds: number) => void;
+  onForceNonOverlapping: (audioDuration: number) => void;
   viewerHeight: number;
 }
 
@@ -31,6 +32,7 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
   selectedFragment,
   onFragmentUpdate,
   onApplyTimeOffset,
+  onForceNonOverlapping,
 }, ref) => {
   const waveformRef = useRef<HTMLDivElement>(null);
   const wavesurfer = useRef<WaveSurfer | null>(null);
@@ -46,15 +48,22 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
   const [offsetTime, setOffsetTime] = useState('');
   const [offsetValue, setOffsetValue] = useState('');
   const [isWaveformLoading, setIsWaveformLoading] = useState(true);
+  const [isSnapEnabled, setIsSnapEnabled] = useState(true);
+  const [showForceNonOverlapDialog, setShowForceNonOverlapDialog] = useState(false);
   const audioUrlRef = useRef<string | null>(null);
 
   // Refs to hold the latest callbacks
   const onFragmentSelectRef = useRef(onFragmentSelect);
   const onFragmentUpdateRef = useRef(onFragmentUpdate);
+  const isSnapEnabledRef = useRef(isSnapEnabled);
   useEffect(() => {
     onFragmentSelectRef.current = onFragmentSelect;
     onFragmentUpdateRef.current = onFragmentUpdate;
   });
+
+  useEffect(() => {
+    isSnapEnabledRef.current = isSnapEnabled;
+  }, [isSnapEnabled]);
 
   const drawFragments = useCallback(() => {
     const regions = regionsPluginRef.current;
@@ -172,22 +181,24 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
         }
       };
 
-      // If end changed, update next region's start (only)
-      if (Math.abs(region.end - prevEnd) > REGION_EPSILON && idx < fragmentsRef.current.length - 1) {
-        const next = fragmentsRef.current[idx + 1];
-        if (next.clipBegin !== region.end) {
-          next.clipBegin = region.end;
-          onFragmentUpdateRef.current(next.id, { clipBegin: region.end });
-          updateRegionVisual(next.id, { start: region.end });
+      if (isSnapEnabledRef.current) {
+        // If end changed, update next region's start (only)
+        if (Math.abs(region.end - prevEnd) > REGION_EPSILON && idx < fragmentsRef.current.length - 1) {
+          const next = fragmentsRef.current[idx + 1];
+          if (next.clipBegin !== region.end) {
+            next.clipBegin = region.end;
+            onFragmentUpdateRef.current(next.id, { clipBegin: region.end });
+            updateRegionVisual(next.id, { start: region.end });
+          }
         }
-      }
-      // If start changed, update previous region's end (only)
-      if (Math.abs(region.start - prevStart) > REGION_EPSILON && idx > 0) {
-        const prev = fragmentsRef.current[idx - 1];
-        if (prev.clipEnd !== region.start) {
-          prev.clipEnd = region.start;
-          onFragmentUpdateRef.current(prev.id, { clipEnd: region.start });
-          updateRegionVisual(prev.id, { end: region.start });
+        // If start changed, update previous region's end (only)
+        if (Math.abs(region.start - prevStart) > REGION_EPSILON && idx > 0) {
+          const prev = fragmentsRef.current[idx - 1];
+          if (prev.clipEnd !== region.start) {
+            prev.clipEnd = region.start;
+            onFragmentUpdateRef.current(prev.id, { clipEnd: region.start });
+            updateRegionVisual(prev.id, { end: region.start });
+          }
         }
       }
     });
@@ -250,21 +261,23 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
             }
           };
 
-          // Handle adjacent region adjustments only on drag end
-          if (Math.abs(region.end - prevEnd) > REGION_EPSILON && idx < fragmentsRef.current.length - 1) {
-            const next = fragmentsRef.current[idx + 1];
-            if (next.clipBegin !== region.end) {
-              next.clipBegin = region.end;
-              onFragmentUpdateRef.current(next.id, { clipBegin: region.end });
-              updateRegionVisual(next.id, { start: region.end });
+          if (isSnapEnabledRef.current) {
+            // Handle adjacent region adjustments only on drag end
+            if (Math.abs(region.end - prevEnd) > REGION_EPSILON && idx < fragmentsRef.current.length - 1) {
+              const next = fragmentsRef.current[idx + 1];
+              if (next.clipBegin !== region.end) {
+                next.clipBegin = region.end;
+                onFragmentUpdateRef.current(next.id, { clipBegin: region.end });
+                updateRegionVisual(next.id, { start: region.end });
+              }
             }
-          }
-          if (Math.abs(region.start - prevStart) > REGION_EPSILON && idx > 0) {
-            const prev = fragmentsRef.current[idx - 1];
-            if (prev.clipEnd !== region.start) {
-              prev.clipEnd = region.start;
-              onFragmentUpdateRef.current(prev.id, { clipEnd: region.start });
-              updateRegionVisual(prev.id, { end: region.start });
+            if (Math.abs(region.start - prevStart) > REGION_EPSILON && idx > 0) {
+              const prev = fragmentsRef.current[idx - 1];
+              if (prev.clipEnd !== region.start) {
+                prev.clipEnd = region.start;
+                onFragmentUpdateRef.current(prev.id, { clipEnd: region.start });
+                updateRegionVisual(prev.id, { end: region.start });
+              }
             }
           }
         }
@@ -487,6 +500,24 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
             <button onClick={handleOffsetFromCursor} className="p-2 bg-orange-200 text-orange-700 rounded-lg hover:bg-orange-300 transition-colors dark:bg-orange-700 dark:text-white dark:hover:bg-orange-600" title="Apply Time Offset">
               <Clock className="w-4 h-4" />
             </button>
+            <button
+              onClick={() => setShowForceNonOverlapDialog(true)}
+              className="p-2 bg-red-200 text-red-700 rounded-lg hover:bg-red-300 transition-colors dark:bg-red-700 dark:text-white dark:hover:bg-red-600"
+              title="Force non-overlapping segments"
+            >
+              <AlertTriangle className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setIsSnapEnabled((value) => !value)}
+              className={`p-2 rounded-lg transition-colors ${
+                isSnapEnabled
+                  ? 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600'
+                  : 'bg-red-200 text-red-700 hover:bg-red-300 dark:bg-red-700 dark:text-white dark:hover:bg-red-600'
+              }`}
+              title={isSnapEnabled ? 'Disable boundary snap' : 'Enable boundary snap'}
+            >
+              <Magnet className="w-4 h-4" />
+            </button>
           </div>
           {/* Next/Previous Fragment Buttons */}
           <div className="flex items-center gap-2">
@@ -579,6 +610,42 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
                   Apply Offset
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showForceNonOverlapDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-96 dark:bg-gray-800">
+            <h3 className="text-lg font-semibold mb-3 dark:text-white">Force Align to Text Sequence</h3>
+            <div className="text-sm text-gray-600 dark:text-gray-300 mb-5 space-y-2">
+              <p>
+                This rewrites all fragment timings to match the chapter text order exactly.
+              </p>
+              <p>
+                It creates continuous coverage from 0:00 to the end of the audio with no gaps and no overlaps.
+              </p>
+              <p className="font-medium text-red-600 dark:text-red-400">
+                Warning: existing manual timings will be replaced.
+              </p>
+            </div>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowForceNonOverlapDialog(false)}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  onForceNonOverlapping(wavesurfer.current?.getDuration() || 0);
+                  setShowForceNonOverlapDialog(false);
+                }}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600"
+              >
+                Force Align
+              </button>
             </div>
           </div>
         </div>

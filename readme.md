@@ -79,8 +79,14 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 - **Play/Pause**: Click the play button or press **Spacebar** to toggle audio playback
 - **Next/Previous**: Navigate between audio fragments with the arrow buttons
-- **Red timer icon "Apply Timer Offset"**: Located in the bottom waveform viewer panel, allows you to shift all fragments by desired time intervals to correct timing offsets across the entire chapter.ing synchronized text and audio in EPUB files (aka "TalkingBooks").
-- **Red timer icon "Apply Timer Offset"**: Located in the bottom waveform viewer panel, allows you to shift all fragments by desired time intervals to correct timing offsets across the entire chapter.
+- **Orange timer icon (Apply Time Offset)**: Shift all fragments from a chosen timestamp by a positive or negative time offset
+- **Magnet icon (Snap Toggle)**: Controls boundary auto-snapping while dragging waveform regions
+  - Gray = snap enabled (default behavior)
+  - Red = snap disabled (free boundary dragging)
+- **Red warning icon (Force Align)**: Rebuilds all fragment timings based on text sequence order
+  - Text fragment order is treated as the single source of truth
+  - Timings are rewritten to create continuous coverage from start to end of the audio
+  - No overlaps and no gaps remain after force align
 
 ## Screenshots
 

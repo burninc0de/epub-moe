@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Plus, Trash2, Split } from 'lucide-react';
 import { SMILFragment } from '../types/epub';
 
@@ -20,6 +20,8 @@ export const FragmentEditor: React.FC<FragmentEditorProps> = ({
   onFragmentAdd
 }) => {
   const [splitTime, setSplitTime] = useState('');
+  const [startTimeInput, setStartTimeInput] = useState('');
+  const [endTimeInput, setEndTimeInput] = useState('');
 
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -36,6 +38,35 @@ export const FragmentEditor: React.FC<FragmentEditorProps> = ({
       return parseInt(mins) * 60 + parseInt(secs) + parseInt(ms.padEnd(3, '0')) / 1000;
     }
     return parseFloat(timeStr) || 0;
+  };
+
+  useEffect(() => {
+    if (!selectedFragment) {
+      setStartTimeInput('');
+      setEndTimeInput('');
+      return;
+    }
+
+    setStartTimeInput(formatTime(selectedFragment.clipBegin));
+    setEndTimeInput(formatTime(selectedFragment.clipEnd));
+  }, [selectedFragment]);
+
+  const hasTimingChanges = selectedFragment
+    ? startTimeInput !== formatTime(selectedFragment.clipBegin) ||
+      endTimeInput !== formatTime(selectedFragment.clipEnd)
+    : false;
+
+  const handleApplyTiming = () => {
+    if (!selectedFragment) return;
+
+    const newStart = parseTimeInput(startTimeInput);
+    const newEnd = parseTimeInput(endTimeInput);
+    if (newStart >= newEnd) return;
+
+    onFragmentUpdate(selectedFragment.id, {
+      clipBegin: newStart,
+      clipEnd: newEnd
+    });
   };
 
   const handleSplit = () => {
@@ -67,11 +98,8 @@ export const FragmentEditor: React.FC<FragmentEditorProps> = ({
                   </label>
                   <input
                     type="text"
-                    value={formatTime(selectedFragment.clipBegin)}
-                    onChange={(e) => {
-                      const time = parseTimeInput(e.target.value);
-                      onFragmentUpdate(selectedFragment.id, { clipBegin: time });
-                    }}
+                    value={startTimeInput}
+                    onChange={(e) => setStartTimeInput(e.target.value)}
                     className="w-full px-3 py-2 border border-blue-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-blue-400 dark:focus:border-blue-400"
                   />
                 </div>
@@ -82,14 +110,19 @@ export const FragmentEditor: React.FC<FragmentEditorProps> = ({
                   </label>
                   <input
                     type="text"
-                    value={formatTime(selectedFragment.clipEnd)}
-                    onChange={(e) => {
-                      const time = parseTimeInput(e.target.value);
-                      onFragmentUpdate(selectedFragment.id, { clipEnd: time });
-                    }}
+                    value={endTimeInput}
+                    onChange={(e) => setEndTimeInput(e.target.value)}
                     className="w-full px-3 py-2 border border-blue-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-blue-400 dark:focus:border-blue-400"
                   />
                 </div>
+
+                <button
+                  onClick={handleApplyTiming}
+                  disabled={!hasTimingChanges}
+                  className="w-full px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:text-gray-200 disabled:opacity-60 disabled:cursor-not-allowed transition-colors dark:bg-blue-800 dark:hover:bg-blue-700 dark:disabled:bg-gray-600 dark:disabled:text-gray-300"
+                >
+                  Apply
+                </button>
 
 
               </div>

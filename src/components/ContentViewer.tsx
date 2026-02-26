@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import './ContentViewer.css';
 import { Scissors, AlignJustify, Text, Code } from 'lucide-react';
 import { EPUBChapter, SMILFragment } from '../types/epub';
@@ -15,7 +15,7 @@ interface ContentViewerProps {
   onFragmentSelect: (fragment: SMILFragment) => void;
   isCutToolActive: boolean;
   setIsCutToolActive: (isActive: boolean) => void;
-  onFragmentSplitByText: (fragmentId: string, splitIndex: number) => void;
+  onFragmentSplitByText: (fragmentId: string, splitIndex: number) => boolean;
   onHtmlUpdate?: (newHtml: string) => void;
   isHtmlEditMode: boolean;
   setIsHtmlEditMode: React.Dispatch<React.SetStateAction<boolean>>;
@@ -40,6 +40,13 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
   const [editedHtml, setEditedHtml] = useState<string | null>(null);
   const [isCutToolSticky, setIsCutToolSticky] = useState<boolean>(false);
   const [cutPreviewPosition, setCutPreviewPosition] = useState<{ x: number; y: number; height: number } | null>(null);
+  const [splitNotice, setSplitNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!splitNotice) return;
+    const timeout = window.setTimeout(() => setSplitNotice(null), 2200);
+    return () => window.clearTimeout(timeout);
+  }, [splitNotice]);
 
   if (!chapter) {
     return (
@@ -242,6 +249,23 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
     }
   };
 
+  const getSplitIndexFromPointer = (fragmentWrapper: Element, clientX: number, clientY: number): number => {
+    const range = document.caretRangeFromPoint(clientX, clientY);
+    if (!range) return -1;
+
+    if (!fragmentWrapper.contains(range.endContainer)) {
+      return -1;
+    }
+
+    const preCaretRange = range.cloneRange();
+    preCaretRange.selectNodeContents(fragmentWrapper);
+    preCaretRange.setEnd(range.endContainer, range.endOffset);
+    const splitIndex = preCaretRange.toString().length;
+
+    const fullText = fragmentWrapper.textContent || '';
+    return findNearestWordBoundary(fullText, splitIndex);
+  };
+
   const getTextNodeAtIndex = (element: Element, index: number): { node: Node; offset: number } | null => {
     const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
     let currentIndex = 0;
@@ -267,29 +291,23 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
     if (!fragmentId) return;
 
     if (isCutToolActive) {
-      const selection = window.getSelection();
-      if (selection && selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0);
-        const preCaretRange = range.cloneRange();
-        preCaretRange.selectNodeContents(fragmentWrapper);
-        preCaretRange.setEnd(range.endContainer, range.endOffset);
-        let splitIndex = preCaretRange.toString().length;
-        
-        // Apply sticky behavior: snap to nearest word boundary
-        const fullText = fragmentWrapper.textContent || '';
-        const adjustedIndex = findNearestWordBoundary(fullText, splitIndex);
-        
-        // If invalid position (beginning/end of fragment), don't perform the cut
-        if (adjustedIndex === -1) {
-          return;
-        }
-        
-        onFragmentSplitByText(fragmentId, adjustedIndex);
-        
-        // Only deactivate tool if not in sticky mode
-        if (!isCutToolSticky) {
-          setIsCutToolActive(false);
-        }
+      const splitIndex = getSplitIndexFromPointer(fragmentWrapper, e.clientX, e.clientY);
+
+      // If invalid position (beginning/end of fragment), don't perform the cut
+      if (splitIndex === -1) {
+        setSplitNotice('Split ignored: pick a valid boundary inside the fragment.');
+        return;
+      }
+
+      const splitApplied = onFragmentSplitByText(fragmentId, splitIndex);
+      if (!splitApplied) {
+        setSplitNotice('Split ignored: fragment is too short or split point is invalid.');
+        return;
+      }
+
+      // Only deactivate tool if not in sticky mode
+      if (!isCutToolSticky) {
+        setIsCutToolActive(false);
       }
     } else {
       const fragment = fragments.find(f => f.id === fragmentId);
@@ -378,6 +396,11 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
       </div>
 
       <div className="flex-1 overflow-y-auto p-6">
+        {splitNotice && (
+          <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-900/40 dark:text-amber-200">
+            {splitNotice}
+          </div>
+        )}
         {isHtmlEditMode && editedHtml !== null ? (
           <Editor
             value={editedHtml}

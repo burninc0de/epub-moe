@@ -100,7 +100,7 @@ export class EPUBParser {
         
         if (smilFile) {
           const content = await smilFile.async('text');
-          const fragments = await this.parseSMILContent(content);
+          const fragments = await this.parseSMILContent(content, item.$.id);
           smilFiles.set(item.$.id, fragments);
         }
       }
@@ -109,7 +109,7 @@ export class EPUBParser {
     return smilFiles;
   }
 
-  private async parseSMILContent(content: string): Promise<SMILFragment[]> {
+  private async parseSMILContent(content: string, smilId: string): Promise<SMILFragment[]> {
     const smilData = await this.parseXML(content);
     const fragments: SMILFragment[] = [];
     
@@ -129,8 +129,9 @@ export class EPUBParser {
       const audio = par.audio?.[0];
       
       if (text && audio) {
+        const baseId = (par.$ && par.$.id) || `fragment-${index}`;
         fragments.push({
-          id: (par.$ && par.$.id) || `fragment-${index}`,
+          id: `${smilId}::${baseId}`,
           textSrc: text.$.src,
           audioSrc: audio.$.src,
           clipBegin: this.parseTime(audio.$['clipBegin'] || '0s'),
