@@ -1,243 +1,45 @@
-# AGENTS.md - Development Guidelines for epub-moe
+# AGENTS.md - epub-moe
 
-This file contains development guidelines and commands for agentic coding assistants working on the epub-moe project.
+React + TypeScript + Vite + Tailwind SPA for fine-tuning synchronized text/audio in EPUB3 media overlays (SMIL). Single-page app, no backend, no tests.
 
-## Project Overview
+## Commands
 
-epub-moe is a React-based tool for fine-tuning synchronized text and audio in EPUB files with media overlays. It uses TypeScript, Vite, and Tailwind CSS.
-
-## Build Commands
-
-### Development Server
 ```bash
-npm run dev
-```
-Starts the Vite development server on `http://localhost:5173`.
-
-### Production Build
-```bash
-npm run build
-```
-Creates a production build in the `dist/` directory.
-
-### Preview Production Build
-```bash
-npm run preview
-```
-Serves the production build locally for testing.
-
-### Linting
-```bash
-npm run lint
-```
-Runs ESLint on all TypeScript/JavaScript files. This command should pass before committing changes.
-
-**Note**: There is currently a compatibility issue between ESLint 9 and @typescript-eslint 8 that causes the lint command to fail with a "no-unused-expressions" rule error. The build still works correctly, but the lint command needs to be fixed.
-
-## Testing Commands
-
-**Note**: The project currently has limited test coverage. There is a VS Code task configured for Vitest, but no test scripts in package.json.
-
-### Run Tests (VS Code Task)
-```bash
-vitest run
-```
-This is configured as a VS Code task. If you add test files, ensure this command works and consider adding it to package.json scripts.
-
-### Single Test File
-```bash
-vitest run path/to/test/file.test.ts
-```
-Run a specific test file (when tests are added).
-
-## Code Style Guidelines
-
-### TypeScript Configuration
-
-- **Strict Mode**: All TypeScript strict checks are enabled (`strict: true`)
-- **Unused Variables**: `noUnusedLocals: true` and `noUnusedParameters: true` - remove or prefix with `_` if intentionally unused
-- **Target**: ES2020 with DOM libraries
-- **Module Resolution**: Use bundler resolution for modern import handling
-- **JSX**: React JSX transform (`react-jsx`)
-
-### Import Style
-
-- Use named imports from React: `import React, { useState, useEffect } from 'react';`
-- Group imports by category:
-  1. React/React-related imports
-  2. Third-party libraries
-  3. Local components/utilities/types
-- Sort imports alphabetically within each group
-- Use absolute imports for local files (relative to `src/`)
-
-Example:
-```typescript
-import React, { useCallback, useState } from 'react';
-import { Upload, Loader2 } from 'lucide-react';
-
-import { FileUpload } from './components/FileUpload';
-import { useEPUBEditor } from './hooks/useEPUBEditor';
+npm run dev      # Vite dev server on http://localhost:5173
+npm run build    # production build to dist/ (passes; typecheck is NOT run)
+npm run preview  # serve the production build
+npm run lint     # BROKEN - see below
 ```
 
-### Component Patterns
+- **`npm run lint` fails** with `TypeError: ... '@typescript-eslint/no-unused-expressions': Cannot read properties of undefined (reading 'allowShortCircuit')` — ESLint 9.x is incompatible with the pinned typescript-eslint 8.3.0. Do not attempt to "fix" lint errors by editing source; it fails at config load. The real verification is `npm run build`.
+- **No tests** exist and **no test runner is configured** (no vitest in package.json, no `vitest.config.*`, no `.vscode/`). Do not add a test script or config without checking with the user first.
+- **No typecheck script.** `tsc --noEmit` is enabled via `tsconfig.app.json` (strict, `noUnusedLocals`, `noUnusedParameters`), but nothing invokes it. To typecheck manually: `npx tsc -b`.
 
-- **Functional Components**: Use functional components with hooks, not class components
-- **TypeScript Interfaces**: Define prop interfaces for all components
-- **Event Handlers**: Use `useCallback` for event handlers to prevent unnecessary re-renders
-- **Ref Usage**: Use `useRef` for DOM references and imperative handles
+## Architecture
 
-Example:
-```typescript
-interface ComponentProps {
-  onFileSelect: (file: File) => void;
-  isLoading: boolean;
-}
+- `src/hooks/useEPUBEditor.ts` (773 lines) is the central controller: all EPUB state, all fragment operations (update/delete/split/add/offset/force-align), and `exportEPUB`.
+- `src/utils/epubParser.ts` — `EPUBParser` class parses `META-INF/container.xml` → OPF → spine chapters / SMIL fragments / audio blobs into `EPUBData`. Handles nested-directory EPUBs via `calculateBasePath`/`resolvePath`; use these helpers for path math rather than string joins.
+- `src/utils/smilBuilder.ts` — `buildSMIL()` regenerates SMIL XML on export.
+- `src/types/epub.ts` — `EPUBData`, `SMILFragment`, `AudioFile`. Note `EPUBData.manifest` and most parser outputs are typed `any` (raw xml2js trees) — that loose typing is intentional; keep it when extending.
+- `src/App.tsx` composes the 4-panel layout: `ChapterList` (left) / `ContentViewer` (center) / `FragmentEditor` (right) / `WaveformViewer` (bottom, shown only when audio exists).
 
-export const Component: React.FC<ComponentProps> = ({ onFileSelect, isLoading }) => {
-  const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) onFileSelect(file);
-  }, [onFileSelect]);
+## Gotchas
 
-  return (
-    // JSX
-  );
-};
-```
+- **Export never re-encodes audio.** `exportEPUB` reuses the original zip and only rewrites SMIL, chapter XHTML, and OPF `media:duration` values. Don't build features around decoding/re-encoding audio.
+- **Fragment IDs are namespaced** as `${smilId}::${parId}` internally; `smilBuilder` strips the prefix on export. Keep this invariant when adding fragment operations.
+- **Dark mode is forced on** in `src/main.tsx` via `document.documentElement.classList.add('dark')`, so Tailwind `dark:` variants are always active. Don't add light-mode styling; don't remove the class.
+- `vite.config.ts` sets `define: { global: 'window' }` and aliases `events: 'events'` — browser polyfills for xml2js/jszip. Keep them.
+- VBR MP3s cause waveform drift over time (readme documents this); assume CBR audio.
+- Known limitation: no undo. UI work shouldn't assume one exists.
+- The tool fine-tunes existing media overlays only — it does not auto-sync audio or create overlays from scratch.
 
-### Naming Conventions
+## Conventions
 
-- **Components**: PascalCase (e.g., `FileUpload`, `WaveformViewer`)
-- **Hooks**: camelCase with `use` prefix (e.g., `useEPUBEditor`, `useCallback`)
-- **Functions**: camelCase (e.g., `parseEPUB`, `handleFileInput`)
-- **Classes**: PascalCase (e.g., `EPUBParser`)
-- **Interfaces**: PascalCase with descriptive names (e.g., `EPUBData`, `FileUploadProps`)
-- **Types**: PascalCase (e.g., `AudioFile`, `SMILFragment`)
-- **Constants**: SCREAMING_SNAKE_CASE (e.g., `WAVEFORM_HEIGHT_KEY`)
+- **No code comments** unless required for genuinely complex logic (self-documenting code + types preferred). Existing comments are the exception, not the rule.
+- Import ordering: React → third-party → local (`./` or `src/` paths).
+- Functional components with hooks; `useCallback`/`useMemo` for handlers and derived data; `useRef` for imperative handles (e.g. `WaveformViewerHandles`).
+- Error handling: try/catch async, user-facing message in UI, `console.error` for details.
 
-### Error Handling
+## Docs
 
-- Use try-catch blocks for async operations
-- Display user-friendly error messages in the UI
-- Log technical details to console for debugging
-- Handle loading states appropriately
-
-Example:
-```typescript
-const handleExport = useCallback(async () => {
-  setIsLoading(true);
-  try {
-    await exportEPUB();
-  } catch (error) {
-    console.error('Export failed:', error);
-    // Show user-friendly error message
-  } finally {
-    setIsLoading(false);
-  }
-}, [exportEPUB]);
-```
-
-### Styling Guidelines
-
-- **Tailwind CSS**: Use Tailwind utility classes for styling
-- **Dark Mode**: Support dark mode with `dark:` prefixes
-- **Responsive Design**: Use responsive utilities (`sm:`, `md:`, `lg:`)
-- **Component-specific CSS**: Use CSS modules or scoped styles when Tailwind isn't sufficient
-- **Consistent Spacing**: Use Tailwind's spacing scale (`p-4`, `m-2`, etc.)
-
-Example:
-```jsx
-<div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
-  <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-800 dark:hover:bg-blue-700 text-white rounded-lg transition-colors">
-    Action
-  </button>
-</div>
-```
-
-### File Structure
-
-- **Components**: `src/components/` - React components
-- **Hooks**: `src/hooks/` - Custom React hooks
-- **Utils**: `src/utils/` - Utility functions and classes
-- **Types**: `src/types/` - TypeScript type definitions
-- **Assets**: `src/` root for non-component files
-
-### Async/Await Patterns
-
-- Use `async/await` instead of Promise chains
-- Handle errors with try-catch blocks
-- Use `Promise.all()` for concurrent operations when appropriate
-
-### State Management
-
-- Use React hooks (`useState`, `useReducer`) for component state
-- Lift state up when multiple components need access
-- Use `useCallback` for functions passed as props to prevent unnecessary re-renders
-- Consider custom hooks for complex state logic
-
-### Performance Considerations
-
-- Memoize expensive calculations with `useMemo`
-- Use `useCallback` for event handlers
-- Avoid unnecessary re-renders by properly structuring component dependencies
-- Lazy load components when appropriate
-
-### Accessibility
-
-- Use semantic HTML elements
-- Provide alt text for images
-- Ensure keyboard navigation works
-- Use ARIA attributes when needed
-- Test with screen readers
-
-### Git Workflow
-
-- Run `npm run lint` before committing
-- Write descriptive commit messages
-- Keep commits focused on single changes
-- Use feature branches for new work
-
-### Code Comments
-
-- **NO comments** unless absolutely necessary for complex business logic
-- Prefer self-documenting code with clear variable/function names
-- Use TypeScript types to document expected data structures
-
-## Security Best Practices
-
-- Validate file uploads (only accept .epub files)
-- Sanitize user inputs
-- Use HTTPS for production deployments
-- Avoid exposing sensitive data in client-side code
-
-## Browser Compatibility
-
-- Target modern browsers (ES2020+)
-- Test on Chrome, Firefox, Safari, and Edge
-- Use progressive enhancement where appropriate
-
-## Deployment
-
-- Build command: `npm run build`
-- Output directory: `dist/`
-- Static hosting compatible (no server-side rendering required)
-
-## Contributing
-
-- Follow the established code style
-- Add TypeScript types for new features
-- Test changes in multiple browsers
-- Update this document if conventions change
-
-## Additional Resources
-
-- [React Documentation](https://react.dev/)
-- [TypeScript Handbook](https://www.typescriptlang.org/docs/)
-- [Tailwind CSS Documentation](https://tailwindcss.com/docs)
-- [Vite Documentation](https://vitejs.dev/)
-- [ESLint Documentation](https://eslint.org/docs/user-guide/)
-
----
-
-*This document should be updated as the project evolves. Last updated: 2026-01-27*</content>
-<parameter name="filePath">/home/zeno/Dev/epub-moe/AGENTS.md
+- `readme.md` and `CONTRIBUTING.md` contain the product/usage philosophy (personal tool, writer-maintained, PRs welcome but slow). `CONTRIBUTING.md` says to run `npm run lint` before PRs — know it's currently broken.
