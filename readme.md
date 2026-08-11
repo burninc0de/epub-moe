@@ -118,19 +118,19 @@ If the fixture is missing, the tests skip with a clear message. The fixture is g
 
 ## Known Limitations
 
-- Built for my specific workflow - your mileage may vary
-- Minimal error handling (it works for most EPUBs, can't promise it'll work for yours)
+- Built around my production workflow — it solves my EPUBs, likely yours too
+- Error handling is pragmatic; tested against Storyteller and Tobi exports, and the smoke-test fixture
 - No undo functionality (export often!)
 - Single-user, local-only (no cloud features)
 
 ## Contributing
 
-This project exists because I needed it to work. If you find it useful and want to improve it, great! But please understand:
+This project is actively used to produce and maintain real EPUB titles. It's maintained by one person, so:
 
-- I'm a writer first, developer second
-- I can't commit to ongoing maintenance or support
-- Pull requests welcome, but no promises on review timelines
-- Issues are fine, but "it doesn't work with my EPUB" might not get fixed
+- Pull requests are welcome and reviewed, but response times vary
+- Issues are read and acted on as time allows
+- If it doesn't work with your EPUB, report it — if you can share a minimal reproduction, even better
+- No contribution guidelines beyond: keep the tests green, build before submitting
 
 ## Technical Stack
 

@@ -1,46 +1,35 @@
 # Contributing to EPUB Media Overlay Editor
 
-Thank you for your interest in contributing! As mentioned in the README, this project exists because I needed it to work. Here are some guidelines for contributing:
+PRs always welcome. If unsure about scope, consult [README](README.md) or just open an issue.
 
-## Development Philosophy
+Setup instructions are in the [README](README.md) — same as what you'd run to use the app.
 
-This is a personal tool that solved a specific problem. I'm a writer first, developer second, so please keep that context in mind.
+A few pointers:
 
-## How to Contribute
+- **Build, typecheck, and test** before committing — `npm run build`, `npx tsc -b`, `npm test`. Smoke tests need the fixture EPUB (see README's Testing section; tests skip with a message if it's absent).
+- Note: `npm run lint` is currently broken (ESLint 9 vs. pinned typescript-eslint). It fails at config load — don't try to fix it by editing source.
+- **Small functions**, one job each.
+- Keep commits descriptive, for example `feat: new hotkey`.
 
-1. **Fork the repository**
-2. **Create a feature branch** (`git checkout -b feature/amazing-feature`)
-3. **Make your changes**
-4. **Test your changes** with your own EPUB files
-5. **Commit your changes** (`git commit -m 'Add some amazing feature'`)
-6. **Push to the branch** (`git push origin feature/amazing-feature`)
-7. **Open a Pull Request**
+PR process:
 
-## What I'm Looking For
+1. Branch from `main`
+2. Make your changes
+3. Run tests and make sure everything passes
+4. Open a PR with a description of what and why
 
-- Bug fixes for common EPUB formats
-- Performance improvements
-- Better error handling
-- UI/UX improvements
-- Documentation improvements
+## A Note on Tooling
 
-## What I Can't Promise
+Use whatever tools you prefer. As long as you understand the code you're shipping and it passes tests, you're good. Hand-written, LLM-assisted, or dictated by your sleep paralysis demon, I don't judge.
 
-- Quick review times (I have a day job writing books)
-- Compatibility with every EPUB format under the sun
-- Enterprise-level features
-- Ongoing maintenance
+## Reporting Issues
 
-## Testing
+Open a GitHub issue with steps to reproduce and the EPUB you're working with, if you can share one. This tool is built around real talking-book EPUBs. Reproductions beat descriptions.
 
-Before submitting a PR, please test with at least one EPUB file that has media overlays. The tool is designed for EPUBs that already have some sync data.
+## Feature Requests & Scope
 
-## Code Style
+Read the "What This Doesn't Do" section in the README before opening a PR for a new feature. This is a media-overlay fine-tuning tool, not an EPUB authoring suite, so scope is limited.
 
-The project uses ESLint and TypeScript. Run `npm run lint` before submitting.
+## License
 
-## Questions?
-
-Feel free to open an issue, but please understand that "it doesn't work with my specific EPUB" might not get immediate attention.
-
-Thanks for understanding the constraints and still wanting to help improve this tool!
+Contributions are MIT-licensed, same as the project.
