@@ -65,8 +65,21 @@ const App: React.FC = () => {
 
   // Global hotkey for Spacebar and arrow keys
   useEffect(() => {
+    const isInputField = (element: Element | null): boolean => {
+      if (!element) return false;
+      const tag = element.tagName;
+      return (
+        tag === 'INPUT' ||
+        tag === 'TEXTAREA' ||
+        tag === 'SELECT' ||
+        (element as HTMLElement).isContentEditable
+      );
+    };
+
     const handleKeyDown = (event: KeyboardEvent) => {
       if (isHtmlEditMode) return;
+      if (isInputField(document.activeElement)) return;
+
       if (event.code === 'Space') {
         event.preventDefault(); // Prevent default spacebar behavior (e.g., scrolling)
         if (waveformViewerRef.current) {
