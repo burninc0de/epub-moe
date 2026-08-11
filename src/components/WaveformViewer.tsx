@@ -118,6 +118,7 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
 
     const ws = WaveSurfer.create({
       container: waveformRef.current,
+      height: 'auto',
       waveColor: '#6B7280',
       progressColor: '#60A5FA',
       cursorColor: '#93C5FD',
@@ -286,6 +287,24 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
 
     return () => { ws.destroy(); if (audioUrlRef.current) { URL.revokeObjectURL(audioUrlRef.current); } };
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [audioBlob]);
+
+  useEffect(() => {
+    const container = waveformRef.current;
+    const ws = wavesurfer.current;
+    if (!container || !ws) return;
+
+    let lastRedraw = 0;
+    const resizeObserver = new ResizeObserver(() => {
+      const now = performance.now();
+      if (now - lastRedraw > 32) {
+        lastRedraw = now;
+        ws.setOptions({ height: 'auto' });
+      }
+    });
+    resizeObserver.observe(container);
+
+    return () => resizeObserver.disconnect();
   }, [audioBlob]);
 
   // Reset loading state when audio changes
@@ -545,7 +564,7 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
       <div className="relative w-full flex-1 min-h-[50px]">
         <div 
           ref={waveformRef} 
-          className="w-full h-full" 
+          className="w-full h-full waveform-scroll" 
           style={{ 
             minHeight: '100%', 
             position: 'relative',

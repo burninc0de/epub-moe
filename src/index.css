@@ -48,3 +48,12 @@ html, body, #root {
 .dark * {
   scrollbar-color: #4B5563 #1F2937; /* thumb / track */
 }
+
+/* Shadow-DOM scrollbar is 100% height so it stays pinned while the throttled canvas redraw catches up */
+.waveform-scroll > div {
+  height: 100%;
+}
+
+.waveform-scroll > div::part(scroll) {
+  height: 100%;
+}

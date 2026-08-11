@@ -9,12 +9,20 @@ import { Resizer } from './components/Resizer';
 import { Upload, Loader2 } from 'lucide-react';
 
 const WAVEFORM_HEIGHT_KEY = 'waveformHeight';
+const MIN_WAVEFORM_HEIGHT = 192;
+const MIN_TOP_SECTION_HEIGHT = 100;
+const RESIZER_HEIGHT = 8;
+
+const clampWaveformHeight = (desired: number) => {
+  return Math.max(MIN_WAVEFORM_HEIGHT, Math.min(desired, window.innerHeight - RESIZER_HEIGHT - MIN_TOP_SECTION_HEIGHT));
+};
+
 const App: React.FC = () => {
   const [leftPanelWidth, setLeftPanelWidth] = useState(250);
   const [rightPanelWidth, setRightPanelWidth] = useState(350);
   const [waveformHeight, setWaveformHeight] = useState(() => {
     const stored = localStorage.getItem(WAVEFORM_HEIGHT_KEY);
-    return stored ? parseInt(stored, 10) : 200;
+    return stored ? clampWaveformHeight(parseInt(stored, 10)) : clampWaveformHeight(245);
   });
   const [isCutToolActive, setIsCutToolActive] = useState(false);
   const [isHtmlEditMode, setIsHtmlEditMode] = useState(false);
@@ -38,7 +46,7 @@ const App: React.FC = () => {
           setRightPanelWidth(Math.max(100, window.innerWidth - event.clientX));
         }
       } else { // vertical
-        const newHeight = Math.max(100, window.innerHeight - event.clientY);
+        const newHeight = clampWaveformHeight(window.innerHeight - event.clientY);
         setWaveformHeight(newHeight);
         localStorage.setItem(WAVEFORM_HEIGHT_KEY, String(newHeight));
       }
@@ -72,6 +80,14 @@ const App: React.FC = () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [isHtmlEditMode]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setWaveformHeight((prev) => clampWaveformHeight(prev));
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const {
     epubData,
