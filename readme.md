@@ -78,7 +78,7 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 ### Waveform Controls
 
 - **Play/Pause**: Click the play button or press **Spacebar** to toggle audio playback
-- **Next/Previous**: Navigate between audio fragments with the arrow buttons
+- **Next/Previous**: Navigate between audio fragments with the arrow buttons (or left/right arrow keys, disabled when HTML editor active)
 - **Orange timer icon (Apply Time Offset)**: Shift all fragments from a chosen timestamp by a positive or negative time offset
 - **Magnet icon (Snap Toggle)**: Controls boundary auto-snapping while dragging waveform regions
   - Gray = snap enabled (default behavior)
