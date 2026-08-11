@@ -56,6 +56,23 @@ npm run dev
 
 Open [http://localhost:5173](http://localhost:5173) in your browser.
 
+## Testing
+
+Smoke tests use [Playwright](https://playwright.dev/) against the production build and cover the basics: EPUB opens, waveform renders, HTML editor opens, and EPUB exports.
+
+```bash
+npm test
+```
+
+They need a test fixture EPUB at the project root. Download the public single-chapter preview (from the preview portal at [books.learnoutlive.com](https://books.learnoutlive.com)):
+
+```bash
+curl -O https://preview.learnoutlive.com/epubs/dld9_tb_preview.epub
+npm test
+```
+
+If the fixture is missing, the tests skip with a clear message. The fixture is gitignored, so anyone cloning the repo needs to download it once.
+
 ## Usage
 
 1. **Load EPUB**: Drag and drop an EPUB file with existing media overlay structure

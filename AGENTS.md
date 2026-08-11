@@ -1,6 +1,6 @@
 # AGENTS.md - epub-moe
 
-React + TypeScript + Vite + Tailwind SPA for fine-tuning synchronized text/audio in EPUB3 media overlays (SMIL). Single-page app, no backend, no tests.
+React + TypeScript + Vite + Tailwind SPA for fine-tuning synchronized text/audio in EPUB3 media overlays (SMIL). Single-page app, no backend.
 
 ## Commands
 
@@ -8,11 +8,12 @@ React + TypeScript + Vite + Tailwind SPA for fine-tuning synchronized text/audio
 npm run dev      # Vite dev server on http://localhost:5173
 npm run build    # production build to dist/ (passes; typecheck is NOT run)
 npm run preview  # serve the production build
+npm test         # Playwright smoke tests against the production build (see below)
 npm run lint     # BROKEN - see below
 ```
 
 - **`npm run lint` fails** with `TypeError: ... '@typescript-eslint/no-unused-expressions': Cannot read properties of undefined (reading 'allowShortCircuit')` — ESLint 9.x is incompatible with the pinned typescript-eslint 8.3.0. Do not attempt to "fix" lint errors by editing source; it fails at config load. The real verification is `npm run build`.
-- **No tests** exist and **no test runner is configured** (no vitest in package.json, no `vitest.config.*`, no `.vscode/`). Do not add a test script or config without checking with the user first.
+- **Playwright smoke tests** live in `e2e/smoke.spec.ts` and cover the basics: EPUB opens, waveform renders, HTML editor opens, EPUB exports. They run against `npm run preview` (production build) via `playwright.config.ts` — build before testing if you changed code. **The fixture `dld9_tb_preview.epub` is gitignored**; tests `skip` with a clear message if it's absent. Drop a talking-book EPUB at the project root with that filename to run them.
 - **No typecheck script.** `tsc --noEmit` is enabled via `tsconfig.app.json` (strict, `noUnusedLocals`, `noUnusedParameters`), but nothing invokes it. To typecheck manually: `npx tsc -b`.
 
 ## Architecture
