@@ -23,6 +23,8 @@ const MAX_ZOOM = 200;
 export interface WaveformViewerHandles {
   togglePlayback: () => void;
   seekToFragment: (fragment: SMILFragment) => void;
+  prevFragment: () => void;
+  nextFragment: () => void;
 }
 
 export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerProps>(({
@@ -443,6 +445,8 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
   useImperativeHandle(ref, () => ({
     togglePlayback,
     seekToFragment,
+    prevFragment: handlePrevFragment,
+    nextFragment: handleNextFragment,
   }));
 
   const formatTime = (seconds: number): string => {

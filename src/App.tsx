@@ -63,14 +63,19 @@ const App: React.FC = () => {
 
   const waveformViewerRef = useRef<WaveformViewerHandles>(null);
 
-  // Global hotkey for Spacebar
+  // Global hotkey for Spacebar and arrow keys
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.code === 'Space' && !isHtmlEditMode) {
+      if (isHtmlEditMode) return;
+      if (event.code === 'Space') {
         event.preventDefault(); // Prevent default spacebar behavior (e.g., scrolling)
         if (waveformViewerRef.current) {
           waveformViewerRef.current.togglePlayback();
         }
+      } else if (event.code === 'ArrowLeft') {
+        waveformViewerRef.current?.prevFragment();
+      } else if (event.code === 'ArrowRight') {
+        waveformViewerRef.current?.nextFragment();
       }
     };
 
