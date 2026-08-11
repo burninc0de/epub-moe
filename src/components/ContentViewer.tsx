@@ -3,10 +3,12 @@ import './ContentViewer.css';
 import { Scissors, AlignJustify, Text, Code } from 'lucide-react';
 import { EPUBChapter, SMILFragment } from '../types/epub';
 
-import Editor from 'react-simple-code-editor';
+import EditorModule from 'react-simple-code-editor';
 import Prism from 'prismjs';
 import 'prismjs/themes/prism.css';
 import 'prismjs/components/prism-markup';
+
+const Editor = (EditorModule as unknown as { default: typeof EditorModule }).default;
 
 interface ContentViewerProps {
   chapter: EPUBChapter | null;
