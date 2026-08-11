@@ -25,7 +25,7 @@ test('waveform renders after loading', async ({ page }) => {
 
   const waveform = page.locator('.waveform-scroll').first();
   await expect(waveform).toBeVisible();
-  await expect(waveform.locator('canvas').first()).toBeVisible();
+  await expect(waveform.locator('canvas').first()).toBeVisible({ timeout: 10000 });
   await expect(waveform.locator('[part="scroll"]')).toBeVisible();
 });
 

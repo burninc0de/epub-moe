@@ -10,6 +10,31 @@ const MIN_FRAGMENT_DURATION = 0.01;
 const MIN_FORCE_ALIGN_SEGMENT_DURATION = 0.12;
 const MIN_TEXT_SPLIT_DURATION = 0.12;
 
+interface ChapterFragments {
+  chapter: EPUBChapter;
+  smilId: string;
+  fragments: SMILFragment[];
+}
+
+const getChapterFragments = (
+  epubData: EPUBData,
+  selectedChapter: string
+): ChapterFragments | null => {
+  const chapter = epubData.chapters.find(c => c.id === selectedChapter);
+  if (!chapter?.mediaOverlay) return null;
+
+  const smilId = chapter.mediaOverlay;
+  const fragments = epubData.smilFiles.get(smilId);
+  if (!fragments) return null;
+
+  return { chapter, smilId, fragments };
+};
+
+const normalizeOrder = (fragments: SMILFragment[]): SMILFragment[] =>
+  [...fragments]
+    .sort((a, b) => a.clipBegin - b.clipBegin)
+    .map((frag, index) => ({ ...frag, order: index }));
+
 export const useEPUBEditor = () => {
   const [epubData, setEpubData] = useState<EPUBData | null>(null);
   const [originalZip, setOriginalZip] = useState<JSZip | null>(null);
@@ -60,13 +85,10 @@ export const useEPUBEditor = () => {
   const updateFragment = useCallback((fragmentId: string, updates: Partial<SMILFragment>) => {
     if (!epubData || !selectedChapter) return;
 
-    const chapter = epubData.chapters.find(c => c.id === selectedChapter);
-    if (!chapter?.mediaOverlay) return;
+    const chapterData = getChapterFragments(epubData, selectedChapter);
+    if (!chapterData) return;
 
-    const smilId = chapter.mediaOverlay;
-    const fragments = epubData.smilFiles.get(smilId);
-    if (!fragments) return;
-
+    const { smilId, fragments } = chapterData;
     const fragmentIndex = fragments.findIndex(f => f.id === fragmentId);
     if (fragmentIndex === -1) return;
 
@@ -76,13 +98,7 @@ export const useEPUBEditor = () => {
     const newSmilFiles = new Map(epubData.smilFiles);
 
     if (updates.clipBegin !== undefined || updates.clipEnd !== undefined) {
-      const fragmentsWithCorrectOrder = updatedFragments
-        .sort((a, b) => a.clipBegin - b.clipBegin)
-        .map((frag, index) => ({
-          ...frag,
-          order: index
-        }));
-      newSmilFiles.set(smilId, fragmentsWithCorrectOrder);
+      newSmilFiles.set(smilId, normalizeOrder(updatedFragments));
     } else {
       newSmilFiles.set(smilId, updatedFragments);
     }
@@ -97,27 +113,17 @@ export const useEPUBEditor = () => {
   const deleteFragment = useCallback((fragmentId: string) => {
     if (!epubData || !selectedChapter) return;
 
-    const chapter = epubData.chapters.find(c => c.id === selectedChapter);
-    if (!chapter?.mediaOverlay) return;
+    const chapterData = getChapterFragments(epubData, selectedChapter);
+    if (!chapterData) return;
 
-    const smilId = chapter.mediaOverlay;
-    const fragments = epubData.smilFiles.get(smilId);
-    if (!fragments) return;
-
+    const { smilId, fragments } = chapterData;
     const fragmentIndex = fragments.findIndex(f => f.id === fragmentId);
     if (fragmentIndex === -1) return;
 
     const updatedFragments = fragments.filter(f => f.id !== fragmentId);
 
-    const fragmentsWithCorrectOrder = updatedFragments
-      .sort((a, b) => a.clipBegin - b.clipBegin)
-      .map((frag, index) => ({
-        ...frag,
-        order: index
-      }));
-
     const newSmilFiles = new Map(epubData.smilFiles);
-    newSmilFiles.set(smilId, fragmentsWithCorrectOrder);
+    newSmilFiles.set(smilId, normalizeOrder(updatedFragments));
 
     setEpubData({ ...epubData, smilFiles: newSmilFiles });
 
@@ -129,13 +135,10 @@ export const useEPUBEditor = () => {
   const splitFragment = useCallback((fragmentId: string, splitTime: number) => {
     if (!epubData || !selectedChapter) return;
 
-    const chapter = epubData.chapters.find(c => c.id === selectedChapter);
-    if (!chapter?.mediaOverlay) return;
+    const chapterData = getChapterFragments(epubData, selectedChapter);
+    if (!chapterData) return;
 
-    const smilId = chapter.mediaOverlay;
-    const fragments = epubData.smilFiles.get(smilId);
-    if (!fragments) return;
-
+    const { smilId, fragments } = chapterData;
     const fragmentIndex = fragments.findIndex(f => f.id === fragmentId);
     if (fragmentIndex === -1) return;
 
@@ -159,15 +162,8 @@ export const useEPUBEditor = () => {
       ...fragments.slice(fragmentIndex + 1)
     ];
 
-    const fragmentsWithCorrectOrder = updatedFragments
-      .sort((a, b) => a.clipBegin - b.clipBegin)
-      .map((fragment, index) => ({
-        ...fragment,
-        order: index
-      }));
-
     const newSmilFiles = new Map(epubData.smilFiles);
-    newSmilFiles.set(smilId, fragmentsWithCorrectOrder);
+    newSmilFiles.set(smilId, normalizeOrder(updatedFragments));
 
     setEpubData({ ...epubData, smilFiles: newSmilFiles });
   }, [epubData, selectedChapter]);
@@ -175,12 +171,10 @@ export const useEPUBEditor = () => {
   const splitFragmentByText = useCallback((fragmentId: string, splitIndex: number): boolean => {
     if (!epubData || !selectedChapter) return false;
 
-    const chapter = epubData.chapters.find(c => c.id === selectedChapter);
-    if (!chapter || !chapter.mediaOverlay) return false;
+    const chapterData = getChapterFragments(epubData, selectedChapter);
+    if (!chapterData) return false;
 
-    const smilFileId = chapter.mediaOverlay;
-    const fragments = epubData.smilFiles.get(smilFileId);
-    if (!fragments) return false;
+    const { chapter, smilId: smilFileId, fragments } = chapterData;
 
     const fragmentIndex = fragments.findIndex(f => f.id === fragmentId);
     if (fragmentIndex === -1) return false;
@@ -351,15 +345,7 @@ export const useEPUBEditor = () => {
         ...fragments.slice(fragmentIndex + 1)
       ];
       
-      // Recalculate order values for all fragments after the split to ensure chronological order
-      const fragmentsWithCorrectOrder = updatedFragments
-        .sort((a, b) => a.clipBegin - b.clipBegin)
-        .map((fragment, index) => ({
-          ...fragment,
-          order: index
-        }));
-      
-      newSmilFiles.set(smilFileId, fragmentsWithCorrectOrder);
+      newSmilFiles.set(smilFileId, normalizeOrder(updatedFragments));
 
 
       return {
@@ -377,13 +363,10 @@ export const useEPUBEditor = () => {
   const addFragment = useCallback((afterId: string, newFragment: Partial<SMILFragment>) => {
     if (!epubData || !selectedChapter) return;
 
-    const chapter = epubData.chapters.find(c => c.id === selectedChapter);
-    if (!chapter?.mediaOverlay) return;
+    const chapterData = getChapterFragments(epubData, selectedChapter);
+    if (!chapterData) return;
 
-    const smilId = chapter.mediaOverlay;
-    const fragments = epubData.smilFiles.get(smilId);
-    if (!fragments) return;
-
+    const { smilId, fragments } = chapterData;
     const fragmentIndex = fragments.findIndex(f => f.id === afterId);
     if (fragmentIndex === -1) return;
 
@@ -404,15 +387,8 @@ export const useEPUBEditor = () => {
       ...fragments.slice(fragmentIndex + 1)
     ];
 
-    const fragmentsWithCorrectOrder = updatedFragments
-      .sort((a, b) => a.clipBegin - b.clipBegin)
-      .map((frag, index) => ({
-        ...frag,
-        order: index
-      }));
-
     const newSmilFiles = new Map(epubData.smilFiles);
-    newSmilFiles.set(smilId, fragmentsWithCorrectOrder);
+    newSmilFiles.set(smilId, normalizeOrder(updatedFragments));
 
     setEpubData({ ...epubData, smilFiles: newSmilFiles });
   }, [epubData, selectedChapter]);
@@ -420,12 +396,10 @@ export const useEPUBEditor = () => {
   const applyTimeOffset = useCallback((fromTime: number, offsetSeconds: number) => {
     if (!epubData || !selectedChapter) return;
 
-    const chapter = epubData.chapters.find(c => c.id === selectedChapter);
-    if (!chapter?.mediaOverlay) return;
+    const chapterData = getChapterFragments(epubData, selectedChapter);
+    if (!chapterData) return;
 
-    const smilFileId = chapter.mediaOverlay;
-    const fragments = epubData.smilFiles.get(smilFileId);
-    if (!fragments) return;
+    const { smilId: smilFileId, fragments } = chapterData;
 
     const newSmilFiles = new Map(epubData.smilFiles);
     
@@ -447,13 +421,7 @@ export const useEPUBEditor = () => {
       return fragment;
     });
 
-    // Recalculate order values to maintain chronological order after time changes
-    const fragmentsWithCorrectOrder = updatedFragments
-      .sort((a, b) => a.clipBegin - b.clipBegin)
-      .map((frag, index) => ({
-        ...frag,
-        order: index
-      }));
+    const fragmentsWithCorrectOrder = normalizeOrder(updatedFragments);
 
     newSmilFiles.set(smilFileId, fragmentsWithCorrectOrder);
     setEpubData({ ...epubData, smilFiles: newSmilFiles });
@@ -470,12 +438,10 @@ export const useEPUBEditor = () => {
   const forceNonOverlappingFragments = useCallback((audioDuration?: number) => {
     if (!epubData || !selectedChapter) return;
 
-    const chapter = epubData.chapters.find(c => c.id === selectedChapter);
-    if (!chapter?.mediaOverlay) return;
+    const chapterData = getChapterFragments(epubData, selectedChapter);
+    if (!chapterData || chapterData.fragments.length === 0) return;
 
-    const smilFileId = chapter.mediaOverlay;
-    const fragments = epubData.smilFiles.get(smilFileId);
-    if (!fragments || fragments.length === 0) return;
+    const { chapter, smilId: smilFileId, fragments } = chapterData;
 
     const parser = new DOMParser();
     const chapterDoc = parser.parseFromString(chapter.content, 'application/xhtml+xml');
@@ -570,50 +536,45 @@ export const useEPUBEditor = () => {
 
   const getCurrentFragments = useCallback((): SMILFragment[] => {
     if (!epubData || !selectedChapter) return [];
-    
-    const chapter = getCurrentChapter();
-    if (!chapter?.mediaOverlay) return [];
-    
-    return epubData.smilFiles.get(chapter.mediaOverlay) || [];
-  }, [epubData, selectedChapter, getCurrentChapter]);
+
+    const chapterData = getChapterFragments(epubData, selectedChapter);
+    return chapterData ? chapterData.fragments : [];
+  }, [epubData, selectedChapter]);
 
   useEffect(() => {
-    if (epubData && selectedChapter) {
-      const chapter = epubData.chapters.find(c => c.id === selectedChapter);
-      if (chapter && chapter.mediaOverlay) {
-        const fragments = epubData.smilFiles.get(chapter.mediaOverlay) || [];
-        if (fragments.length > 0) {
-          const audioSrc = fragments[0].audioSrc;
-          // Find the SMIL file path from the manifest
-          const smilItem = Array.from(epubData.manifest.package.manifest[0].item).find(
-            (item: any) => item.$ && item.$.id === chapter.mediaOverlay
-          ) as any;
-          const smilPath = (smilItem && smilItem.$) ? smilItem.$.href : '';
-          
-          // The audioSrc might be relative to the SMIL file, so we need to resolve it
-          const smilUrl = new URL(smilPath, 'https://example.com');
-          const resolvedAudioUrl = new URL(audioSrc, smilUrl);
-          const resolvedAudioSrc = resolvedAudioUrl.pathname.substring(1);
+    if (!epubData || !selectedChapter) return;
 
-          const audioFile = epubData.audioFiles.get(resolvedAudioSrc) || epubData.audioFiles.get(audioSrc);
-          
-          if (audioFile) {
-            // Only create a new Blob and update state if the underlying audio data has changed
-            if (lastAudioFileBlobRef.current !== audioFile.blob) {
-              setCurrentAudioBlob(new Blob([audioFile.blob], { type: 'audio/mpeg' }));
-              lastAudioFileBlobRef.current = audioFile.blob; // Update the ref
-            }
-          } else {
-            console.warn(`Audio file not found: ${resolvedAudioSrc} or ${audioSrc}`);
-            setCurrentAudioBlob(null);
-            lastAudioFileBlobRef.current = null; // Clear ref if no audio file
-          }
-        } else {
-          setCurrentAudioBlob(null);
-        }
-      } else {
-        setCurrentAudioBlob(null);
+    const chapterData = getChapterFragments(epubData, selectedChapter);
+    if (!chapterData || chapterData.fragments.length === 0) {
+      setCurrentAudioBlob(null);
+      return;
+    }
+
+    const { smilId, fragments } = chapterData;
+    const audioSrc = fragments[0].audioSrc;
+    // Find the SMIL file path from the manifest
+    const smilItem = Array.from(epubData.manifest.package.manifest[0].item).find(
+      (item: any) => item.$ && item.$.id === smilId
+    ) as any;
+    const smilPath = (smilItem && smilItem.$) ? smilItem.$.href : '';
+
+    // The audioSrc might be relative to the SMIL file, so we need to resolve it
+    const smilUrl = new URL(smilPath, 'https://example.com');
+    const resolvedAudioUrl = new URL(audioSrc, smilUrl);
+    const resolvedAudioSrc = resolvedAudioUrl.pathname.substring(1);
+
+    const audioFile = epubData.audioFiles.get(resolvedAudioSrc) || epubData.audioFiles.get(audioSrc);
+
+    if (audioFile) {
+      // Only create a new Blob and update state if the underlying audio data has changed
+      if (lastAudioFileBlobRef.current !== audioFile.blob) {
+        setCurrentAudioBlob(new Blob([audioFile.blob], { type: 'audio/mpeg' }));
+        lastAudioFileBlobRef.current = audioFile.blob;
       }
+    } else {
+      console.warn(`Audio file not found: ${resolvedAudioSrc} or ${audioSrc}`);
+      setCurrentAudioBlob(null);
+      lastAudioFileBlobRef.current = null;
     }
   }, [epubData, selectedChapter]);
 
