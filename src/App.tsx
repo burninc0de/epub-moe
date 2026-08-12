@@ -15,6 +15,7 @@ declare const __AUTO_LOAD_EPUB__: string;
 const WAVEFORM_HEIGHT_KEY = 'waveformHeight';
 const AUTO_FOLLOW_KEY = 'autoFollow';
 const FRAGMENT_SPACING_KEY = 'fragmentSpacing';
+const ONLY_AUDIO_CHAPTERS_KEY = 'onlyAudioChapters';
 const LEFT_PANEL_COLLAPSED_KEY = 'leftPanelCollapsed';
 const RIGHT_PANEL_COLLAPSED_KEY = 'rightPanelCollapsed';
 const MIN_WAVEFORM_HEIGHT = 192;
@@ -40,6 +41,7 @@ const App: React.FC = () => {
   const [isLeftPanelCollapsed, setIsLeftPanelCollapsed] = useState(() => localStorage.getItem(LEFT_PANEL_COLLAPSED_KEY) === 'true');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [autoFollow, setAutoFollow] = useState(() => localStorage.getItem(AUTO_FOLLOW_KEY) !== 'false');
+  const [onlyAudioChapters, setOnlyAudioChapters] = useState(() => localStorage.getItem(ONLY_AUDIO_CHAPTERS_KEY) === 'true');
   const [fragmentSpacing, setFragmentSpacing] = useState<FragmentSpacing>(() => {
     const stored = localStorage.getItem(FRAGMENT_SPACING_KEY);
     return isValidFragmentSpacing(stored) ? stored : 'default';
@@ -183,6 +185,11 @@ const App: React.FC = () => {
   const handleFragmentSpacingChange = useCallback((value: FragmentSpacing) => {
     setFragmentSpacing(value);
     localStorage.setItem(FRAGMENT_SPACING_KEY, value);
+  }, []);
+
+  const handleOnlyAudioChaptersChange = useCallback((value: boolean) => {
+    setOnlyAudioChapters(value);
+    localStorage.setItem(ONLY_AUDIO_CHAPTERS_KEY, String(value));
   }, []);
 
   useEffect(() => {
@@ -343,9 +350,11 @@ const App: React.FC = () => {
           <>
             <div style={{ width: leftPanelWidth }} className="flex-shrink-0 h-full flex flex-col">
               <ChapterList
+                title={epubData.title}
                 chapters={epubData.chapters}
                 selectedChapter={selectedChapter}
                 onChapterSelect={setSelectedChapter}
+                onlyAudioChapters={onlyAudioChapters}
               />
             </div>
 
@@ -363,6 +372,8 @@ const App: React.FC = () => {
                 onAutoFollowChange={handleAutoFollowChange}
                 fragmentSpacing={fragmentSpacing}
                 onFragmentSpacingChange={handleFragmentSpacingChange}
+                onlyAudioChapters={onlyAudioChapters}
+                onOnlyAudioChaptersChange={handleOnlyAudioChaptersChange}
               />
             ) : (
               <ContentViewer

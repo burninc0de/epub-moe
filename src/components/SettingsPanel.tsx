@@ -9,6 +9,8 @@ interface SettingsPanelProps {
   onAutoFollowChange: (value: boolean) => void;
   fragmentSpacing: FragmentSpacing;
   onFragmentSpacingChange: (value: FragmentSpacing) => void;
+  onlyAudioChapters: boolean;
+  onOnlyAudioChaptersChange: (value: boolean) => void;
 }
 
 export const SettingsPanel: React.FC<SettingsPanelProps> = ({
@@ -17,6 +19,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   onAutoFollowChange,
   fragmentSpacing,
   onFragmentSpacingChange,
+  onlyAudioChapters,
+  onOnlyAudioChaptersChange,
 }) => {
   return (
     <div className="h-full flex flex-col bg-white dark:bg-gray-900">
@@ -55,6 +59,30 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
               <span
                 className={`inline-block w-4 h-4 transform rounded-full bg-white transition-transform ${
                   autoFollow ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-medium text-gray-900 dark:text-white">Show only audio chapters</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Only list chapters that have a media overlay (audio) in the sidebar.
+              </p>
+            </div>
+            <button
+              role="switch"
+              aria-checked={onlyAudioChapters}
+              onClick={() => onOnlyAudioChaptersChange(!onlyAudioChapters)}
+              className={`relative inline-flex items-center h-6 w-11 rounded-full transition-colors flex-shrink-0 ${
+                onlyAudioChapters ? 'bg-blue-600 dark:bg-blue-800' : 'bg-gray-300 dark:bg-gray-600'
+              }`}
+              title="Toggle audio-only chapters"
+            >
+              <span
+                className={`inline-block w-4 h-4 transform rounded-full bg-white transition-transform ${
+                  onlyAudioChapters ? 'translate-x-6' : 'translate-x-1'
                 }`}
               />
             </button>
