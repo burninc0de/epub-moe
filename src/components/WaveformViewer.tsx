@@ -11,6 +11,13 @@ const REGION_EPSILON = 0.01; // 10ms tolerance for floating point imprecision
 const VOLUME_KEY = 'waveformVolume';
 const DEFAULT_VOLUME = 1;
 
+export type RegionColorStyle = 'modern' | 'classic';
+
+const REGION_COLORS: Record<RegionColorStyle, { unselected: string; selected: string }> = {
+  modern: { unselected: 'rgba(96, 165, 250, 0.12)', selected: 'rgba(59, 130, 246, 0.3)' },
+  classic: { unselected: 'rgba(16, 185, 129, 0.2)', selected: 'rgba(96, 165, 250, 0.3)' },
+};
+
 interface WaveformViewerProps {
   audioBlob: Blob;
   fragments: SMILFragment[];
@@ -20,6 +27,7 @@ interface WaveformViewerProps {
   onApplyTimeOffset: (fromTime: number, offsetSeconds: number) => void;
   onForceNonOverlapping: (audioDuration: number) => void;
   viewerHeight: number;
+  regionColorStyle?: RegionColorStyle;
 }
 
 const MIN_ZOOM = 10;
@@ -68,6 +76,7 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
   onFragmentUpdate,
   onApplyTimeOffset,
   onForceNonOverlapping,
+  regionColorStyle = 'modern',
 }, ref) => {
   const waveformRef = useRef<HTMLDivElement>(null);
   const wavesurfer = useRef<WaveSurfer | null>(null);
@@ -143,27 +152,28 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
     fragments.forEach((fragment) => {
       const existingRegion = existingRegions.find(r => r.id === fragment.id);
       const isSelected = selectedFragment?.id === fragment.id;
+      const colors = REGION_COLORS[regionColorStyle];
 
       if (existingRegion) {
         // Update existing region
         existingRegion.setOptions({
           start: fragment.clipBegin,
           end: fragment.clipEnd,
-          color: isSelected ? 'rgba(59, 130, 246, 0.3)' : 'rgba(96, 165, 250, 0.12)',
+          color: isSelected ? colors.selected : colors.unselected,
         });
       } else {
         // Add new region - create region options once
         regions.addRegion({
           start: fragment.clipBegin,
           end: fragment.clipEnd,
-          color: isSelected ? 'rgba(59, 130, 246, 0.3)' : 'rgba(96, 165, 250, 0.12)',
+          color: isSelected ? colors.selected : colors.unselected,
           drag: true,
           resize: true,
           id: fragment.id,
         });
       }
     });
-  }, [fragments, selectedFragment]);
+  }, [fragments, selectedFragment, regionColorStyle]);
 
   useEffect(() => {
     if (!waveformRef.current) return;
@@ -430,15 +440,16 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
     const regions = regionsPluginRef.current;
     if (regions && typeof regions.getRegions === 'function') {
       const allRegions = regions.getRegions(); // array of regions
+      const colors = REGION_COLORS[regionColorStyle];
       allRegions.forEach(region => {
         if (region && typeof region.setOptions === 'function') {
-          region.setOptions({ color: 'rgba(96, 165, 250, 0.12)' });
+          region.setOptions({ color: colors.unselected });
         }
       });
       if (fragment) {
         const selectedRegion = allRegions.find(region => region.id === fragment.id);
         if (selectedRegion && typeof selectedRegion.setOptions === 'function') {
-          selectedRegion.setOptions({ color: 'rgba(59, 130, 246, 0.3)' });
+          selectedRegion.setOptions({ color: colors.selected });
         }
       }
     }

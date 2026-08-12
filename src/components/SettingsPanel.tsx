@@ -3,6 +3,7 @@ import { Github } from 'lucide-react';
 import { version } from '../../package.json';
 import { FragmentSpacing, FRAGMENT_SPACING_OPTIONS } from '../types/epub';
 import { CODE_THEMES } from '../utils/codeThemes';
+import { RegionColorStyle } from './WaveformViewer';
 import { Select } from './ui';
 
 interface SettingsPanelProps {
@@ -14,6 +15,8 @@ interface SettingsPanelProps {
   onOnlyAudioChaptersChange: (value: boolean) => void;
   codeThemeId: string;
   onCodeThemeChange: (value: string) => void;
+  regionColorStyle: RegionColorStyle;
+  onRegionColorStyleChange: (value: RegionColorStyle) => void;
 }
 
 const Switch: React.FC<{ checked: boolean; onChange: () => void; title: string }> = ({ checked, onChange, title }) => (
@@ -43,6 +46,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   onOnlyAudioChaptersChange,
   codeThemeId,
   onCodeThemeChange,
+  regionColorStyle,
+  onRegionColorStyleChange,
 }) => {
   return (
     <div>
@@ -65,6 +70,30 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
             </p>
           </div>
           <Switch checked={onlyAudioChapters} onChange={() => onOnlyAudioChaptersChange(!onlyAudioChapters)} title="Toggle audio-only chapters" />
+        </div>
+
+        <div>
+          <h3 className="text-sm font-medium text-gray-100">Waveform region colors</h3>
+          <p className="text-xs text-gray-500 mt-0.5 mb-2">
+            Blue regions match the app accent; classic keeps the old green look.
+          </p>
+          <div className="inline-flex rounded-md overflow-hidden border border-gray-700">
+            {(['modern', 'classic'] as const).map((style, index) => (
+              <button
+                key={style}
+                onClick={() => onRegionColorStyleChange(style)}
+                className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                  index > 0 ? 'border-l border-gray-700' : ''
+                } ${
+                  regionColorStyle === style
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-base text-gray-300 hover:bg-raised'
+                }`}
+              >
+                {style === 'modern' ? 'Modern' : 'Classic'}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div>

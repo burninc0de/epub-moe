@@ -11,6 +11,7 @@ import { FragmentSpacing, isValidFragmentSpacing } from './types/epub';
 import { Upload, Loader2, PanelRightOpen, PanelRightClose, PanelLeftOpen, PanelLeftClose, Feather, Settings } from 'lucide-react';
 import { Button, IconButton, Modal } from './components/ui';
 import { DEFAULT_CODE_THEME_ID } from './utils/codeThemes';
+import { RegionColorStyle } from './components/WaveformViewer';
 
 declare const __AUTO_LOAD_EPUB__: string;
 
@@ -21,6 +22,7 @@ const ONLY_AUDIO_CHAPTERS_KEY = 'onlyAudioChapters';
 const LEFT_PANEL_COLLAPSED_KEY = 'leftPanelCollapsed';
 const RIGHT_PANEL_COLLAPSED_KEY = 'rightPanelCollapsed';
 const CODE_THEME_KEY = 'codeTheme';
+const REGION_COLOR_STYLE_KEY = 'regionColorStyle';
 const MIN_WAVEFORM_HEIGHT = 192;
 const MIN_TOP_SECTION_HEIGHT = 100;
 const RESIZER_HEIGHT = 8;
@@ -52,6 +54,10 @@ const App: React.FC = () => {
   const [codeThemeId, setCodeThemeId] = useState<string>(() => {
     const stored = localStorage.getItem(CODE_THEME_KEY);
     return stored || DEFAULT_CODE_THEME_ID;
+  });
+  const [regionColorStyle, setRegionColorStyle] = useState<RegionColorStyle>(() => {
+    const stored = localStorage.getItem(REGION_COLOR_STYLE_KEY);
+    return stored === 'classic' ? 'classic' : 'modern';
   });
   const savedRightPanelWidth = useRef(rightPanelWidth);
   const savedLeftPanelWidth = useRef(leftPanelWidth);
@@ -202,6 +208,11 @@ const App: React.FC = () => {
   const handleCodeThemeChange = useCallback((value: string) => {
     setCodeThemeId(value);
     localStorage.setItem(CODE_THEME_KEY, value);
+  }, []);
+
+  const handleRegionColorStyleChange = useCallback((value: RegionColorStyle) => {
+    setRegionColorStyle(value);
+    localStorage.setItem(REGION_COLOR_STYLE_KEY, value);
   }, []);
 
   useEffect(() => {
@@ -441,6 +452,7 @@ const App: React.FC = () => {
               onApplyTimeOffset={applyTimeOffset}
               onForceNonOverlapping={(audioDuration) => forceNonOverlappingFragments(audioDuration)}
               viewerHeight={waveformHeight}
+              regionColorStyle={regionColorStyle}
             />
           </div>
         </>
@@ -457,6 +469,8 @@ const App: React.FC = () => {
             onOnlyAudioChaptersChange={handleOnlyAudioChaptersChange}
             codeThemeId={codeThemeId}
             onCodeThemeChange={handleCodeThemeChange}
+            regionColorStyle={regionColorStyle}
+            onRegionColorStyleChange={handleRegionColorStyleChange}
           />
         </Modal>
       )}
