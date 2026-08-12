@@ -1,0 +1,10 @@
+/* Editor chrome: selection and caret. Token colors and the pre background come
+   from the active theme (see utils/codeThemes.ts), injected as a <style> tag. */
+.html-editor pre,
+.html-editor pre[class*="language-"] {
+  margin: 0;
+}
+
+.html-editor textarea::selection {
+  background: rgba(59, 130, 246, 0.25);
+}

@@ -24,6 +24,7 @@ interface ContentViewerProps {  chapter: EPUBChapter | null;
   setIsBlockDisplay: (isBlock: boolean) => void;
   autoFollow?: boolean;
   fragmentSpacing: FragmentSpacing;
+  codeThemeId?: string | null;
 }
 
 export const ContentViewer: React.FC<ContentViewerProps> = ({
@@ -41,6 +42,7 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
   setIsBlockDisplay,
   autoFollow = true,
   fragmentSpacing,
+  codeThemeId = null,
 }) => {
   const [editedHtml, setEditedHtml] = useState<string | null>(null);
   const [isCutToolSticky, setIsCutToolSticky] = useState<boolean>(false);
@@ -502,7 +504,7 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
         )}
         {isHtmlEditMode && editedHtml !== null ? (
           <Suspense fallback={<div className="p-4 text-sm text-gray-500">Loading editor...</div>}>
-            <HtmlEditor value={editedHtml} onValueChange={setEditedHtml} />
+            <HtmlEditor value={editedHtml} onValueChange={setEditedHtml} codeThemeId={codeThemeId} />
           </Suspense>
         ) : (
           <div className="relative">

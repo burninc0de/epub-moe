@@ -1,4 +1,5 @@
 import React from 'react';
+import { ChevronDown } from 'lucide-react';
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 type ButtonSize = 'sm' | 'md';
@@ -80,6 +81,18 @@ export const TextInput: React.FC<React.InputHTMLAttributes<HTMLInputElement>> = 
     className={`w-full px-2.5 py-1.5 bg-base border border-gray-700 rounded-md text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:opacity-50 ${className}`}
     {...props}
   />
+);
+
+export const Select: React.FC<React.SelectHTMLAttributes<HTMLSelectElement>> = ({ className = '', children, ...props }) => (
+  <div className="relative">
+    <select
+      className={`w-full appearance-none px-2.5 py-1.5 pr-8 bg-base border border-gray-700 rounded-md text-sm text-gray-100 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:opacity-50 ${className}`}
+      {...props}
+    >
+      {children}
+    </select>
+    <ChevronDown className="w-4 h-4 text-gray-500 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2" />
+  </div>
 );
 
 export const ToolbarDivider: React.FC = () => (

@@ -10,6 +10,7 @@ import { Resizer } from './components/Resizer';
 import { FragmentSpacing, isValidFragmentSpacing } from './types/epub';
 import { Upload, Loader2, PanelRightOpen, PanelRightClose, PanelLeftOpen, PanelLeftClose, Feather, Settings } from 'lucide-react';
 import { Button, IconButton, Modal } from './components/ui';
+import { DEFAULT_CODE_THEME_ID } from './utils/codeThemes';
 
 declare const __AUTO_LOAD_EPUB__: string;
 
@@ -19,6 +20,7 @@ const FRAGMENT_SPACING_KEY = 'fragmentSpacing';
 const ONLY_AUDIO_CHAPTERS_KEY = 'onlyAudioChapters';
 const LEFT_PANEL_COLLAPSED_KEY = 'leftPanelCollapsed';
 const RIGHT_PANEL_COLLAPSED_KEY = 'rightPanelCollapsed';
+const CODE_THEME_KEY = 'codeTheme';
 const MIN_WAVEFORM_HEIGHT = 192;
 const MIN_TOP_SECTION_HEIGHT = 100;
 const RESIZER_HEIGHT = 8;
@@ -46,6 +48,10 @@ const App: React.FC = () => {
   const [fragmentSpacing, setFragmentSpacing] = useState<FragmentSpacing>(() => {
     const stored = localStorage.getItem(FRAGMENT_SPACING_KEY);
     return isValidFragmentSpacing(stored) ? stored : 'default';
+  });
+  const [codeThemeId, setCodeThemeId] = useState<string>(() => {
+    const stored = localStorage.getItem(CODE_THEME_KEY);
+    return stored || DEFAULT_CODE_THEME_ID;
   });
   const savedRightPanelWidth = useRef(rightPanelWidth);
   const savedLeftPanelWidth = useRef(leftPanelWidth);
@@ -191,6 +197,11 @@ const App: React.FC = () => {
   const handleOnlyAudioChaptersChange = useCallback((value: boolean) => {
     setOnlyAudioChapters(value);
     localStorage.setItem(ONLY_AUDIO_CHAPTERS_KEY, String(value));
+  }, []);
+
+  const handleCodeThemeChange = useCallback((value: string) => {
+    setCodeThemeId(value);
+    localStorage.setItem(CODE_THEME_KEY, value);
   }, []);
 
   useEffect(() => {
@@ -393,6 +404,7 @@ const App: React.FC = () => {
               setIsBlockDisplay={setIsBlockDisplay}
               autoFollow={autoFollow}
               fragmentSpacing={fragmentSpacing}
+              codeThemeId={codeThemeId}
             />
           </div>
         </div>
@@ -443,6 +455,8 @@ const App: React.FC = () => {
             onFragmentSpacingChange={handleFragmentSpacingChange}
             onlyAudioChapters={onlyAudioChapters}
             onOnlyAudioChaptersChange={handleOnlyAudioChaptersChange}
+            codeThemeId={codeThemeId}
+            onCodeThemeChange={handleCodeThemeChange}
           />
         </Modal>
       )}

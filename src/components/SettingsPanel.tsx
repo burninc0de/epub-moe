@@ -2,6 +2,8 @@ import React from 'react';
 import { Github } from 'lucide-react';
 import { version } from '../../package.json';
 import { FragmentSpacing, FRAGMENT_SPACING_OPTIONS } from '../types/epub';
+import { CODE_THEMES } from '../utils/codeThemes';
+import { Select } from './ui';
 
 interface SettingsPanelProps {
   autoFollow: boolean;
@@ -10,6 +12,8 @@ interface SettingsPanelProps {
   onFragmentSpacingChange: (value: FragmentSpacing) => void;
   onlyAudioChapters: boolean;
   onOnlyAudioChaptersChange: (value: boolean) => void;
+  codeThemeId: string;
+  onCodeThemeChange: (value: string) => void;
 }
 
 const Switch: React.FC<{ checked: boolean; onChange: () => void; title: string }> = ({ checked, onChange, title }) => (
@@ -37,6 +41,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   onFragmentSpacingChange,
   onlyAudioChapters,
   onOnlyAudioChaptersChange,
+  codeThemeId,
+  onCodeThemeChange,
 }) => {
   return (
     <div>
@@ -83,6 +89,18 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
               </button>
             ))}
           </div>
+        </div>
+
+        <div>
+          <h3 className="text-sm font-medium text-gray-100">Code editor theme</h3>
+          <p className="text-xs text-gray-500 mt-0.5 mb-2">
+            Syntax highlighting in the HTML source editor.
+          </p>
+          <Select value={codeThemeId} onChange={(e) => onCodeThemeChange(e.target.value)}>
+            {CODE_THEMES.map((theme) => (
+              <option key={theme.id} value={theme.id}>{theme.label}</option>
+            ))}
+          </Select>
         </div>
       </div>
 
