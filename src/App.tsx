@@ -6,7 +6,7 @@ import { WaveformViewer, WaveformViewerHandles } from './components/WaveformView
 import { FragmentEditor } from './components/FragmentEditor';
 import { useEPUBEditor } from './hooks/useEPUBEditor';
 import { Resizer } from './components/Resizer';
-import { Upload, Loader2 } from 'lucide-react';
+import { Upload, Loader2, PanelRightOpen, PanelRightClose, Feather } from 'lucide-react';
 
 declare const __AUTO_LOAD_EPUB__: string;
 
@@ -30,6 +30,8 @@ const App: React.FC = () => {
   const [isHtmlEditMode, setIsHtmlEditMode] = useState(false);
   const [isBlockDisplay, setIsBlockDisplay] = useState(true);
   const [isLoadingExport, setIsLoadingExport] = useState(false);
+  const [isRightPanelCollapsed, setIsRightPanelCollapsed] = useState(false);
+  const savedRightPanelWidth = useRef(rightPanelWidth);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -221,48 +223,66 @@ const App: React.FC = () => {
         </div>
       )}
 
+      {/* Top bar: full width above all columns */}
+      <div className="flex-shrink-0 flex items-center justify-between gap-2 px-2 py-1 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center gap-2">
+          <div className="inline-flex items-center justify-center w-7 h-7 bg-blue-100 rounded-full dark:bg-blue-900">
+            <Feather className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+          </div>
+          <span className="font-semibold text-gray-900 dark:text-white">epub-moe</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleLoadNewFile}
+            disabled={isLoading}
+            className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Load new EPUB"
+          >
+            {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Upload size={18} />}
+          </button>
+          <button
+            onClick={handleExportEPUB}
+            disabled={isLoadingExport}
+            className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 dark:bg-blue-800 dark:hover:bg-blue-700"
+          >
+            {isLoadingExport ? (
+              <>
+                <Loader2 size={14} className="animate-spin" />
+                <span>Exporting...</span>
+              </>
+            ) : (
+              <span>Export EPUB</span>
+            )}
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".epub"
+            onChange={handleFileInput}
+            className="hidden"
+          />
+          <button
+            onClick={() => {
+              if (isRightPanelCollapsed) {
+                setRightPanelWidth(savedRightPanelWidth.current);
+                setIsRightPanelCollapsed(false);
+              } else {
+                savedRightPanelWidth.current = rightPanelWidth;
+                setIsRightPanelCollapsed(true);
+              }
+            }}
+            className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
+            title={isRightPanelCollapsed ? 'Expand Fragment Editor' : 'Collapse Fragment Editor'}
+          >
+            {isRightPanelCollapsed ? <PanelRightOpen size={18} /> : <PanelRightClose size={18} />}
+          </button>
+        </div>
+      </div>
+
       {/* Top section: Three columns */}
       <div className="flex-1 flex min-h-0">
         {/* Left Column (ChapterList) */}
         <div style={{ width: leftPanelWidth }} className="flex-shrink-0 h-full flex flex-col">
-  
-          <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-            <div className="flex gap-2">
-              <button 
-                onClick={handleLoadNewFile}
-                disabled={isLoading}
-                className="w-10 h-10 flex items-center justify-center bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-600 dark:hover:bg-gray-500"
-                title="Load new EPUB"
-              >
-                {isLoading ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
-                  <Upload size={16} />
-                )}
-              </button>
-              <button 
-                onClick={handleExportEPUB}
-                disabled={isLoadingExport}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 dark:bg-blue-800 dark:hover:bg-blue-700 flex items-center justify-center gap-2"
-              >
-                {isLoadingExport ? (
-                  <>
-                    <Loader2 size={16} className="animate-spin" />
-                    <span>Exporting...</span>
-                  </>
-                ) : (
-                  <span>Export EPUB</span>
-                )}
-              </button>
-            </div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".epub"
-              onChange={handleFileInput}
-              className="hidden"
-            />
-          </div>
           <ChapterList
             chapters={epubData.chapters}
             selectedChapter={selectedChapter}
@@ -308,19 +328,21 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        <Resizer onMouseDown={(e) => startResizing(e, 'horizontal', 'right')} />
-
-        {/* Right Column (FragmentEditor) */}
-        <div style={{ width: rightPanelWidth }} className="flex-shrink-0 h-full overflow-auto dark:bg-gray-800">
-          <FragmentEditor
-            fragments={fragments}
-            selectedFragment={selectedFragment}
-            onFragmentUpdate={updateFragment}
-            onFragmentDelete={deleteFragment}
-            onFragmentSplit={splitFragment}
-            onFragmentAdd={addFragment}
-          />
-        </div>
+        {!isRightPanelCollapsed && (
+          <>
+            <Resizer onMouseDown={(e) => startResizing(e, 'horizontal', 'right')} />
+            <div style={{ width: rightPanelWidth }} className="flex-shrink-0 h-full overflow-auto dark:bg-gray-800">
+              <FragmentEditor
+                fragments={fragments}
+                selectedFragment={selectedFragment}
+                onFragmentUpdate={updateFragment}
+                onFragmentDelete={deleteFragment}
+                onFragmentSplit={splitFragment}
+                onFragmentAdd={addFragment}
+              />
+            </div>
+          </>
+        )}
       </div>
 
       {/* Resizer and Bottom section */}
