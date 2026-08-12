@@ -1,21 +1,15 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, lazy, Suspense } from 'react';
 import './ContentViewer.css';
 import { Scissors, AlignJustify, Text, Code } from 'lucide-react';
 import { EPUBChapter, SMILFragment, FragmentSpacing, FRAGMENT_SPACING_CLASSES } from '../types/epub';
 
-import EditorModule from 'react-simple-code-editor';
-import Prism from 'prismjs';
-import 'prismjs/themes/prism.css';
-import 'prismjs/components/prism-markup';
+const HtmlEditor = lazy(() => import('./HtmlEditor'));
 
 const FONT_SCALE_KEY = 'fontScale';
 const MIN_FONT_SCALE = 0.5;
 const MAX_FONT_SCALE = 2.5;
 
-const Editor = (EditorModule as unknown as { default: typeof EditorModule }).default;
-
-interface ContentViewerProps {
-  chapter: EPUBChapter | null;
+interface ContentViewerProps {  chapter: EPUBChapter | null;
   fragments: SMILFragment[];
   selectedFragment: SMILFragment | null;
   onFragmentSelect: (fragment: SMILFragment) => void;
@@ -457,23 +451,9 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
           </div>
         )}
         {isHtmlEditMode && editedHtml !== null ? (
-          <Editor
-            value={editedHtml}
-            onValueChange={setEditedHtml}
-            highlight={code => Prism.highlight(code, Prism.languages.markup, 'markup')}
-            padding={12}
-            style={{
-              fontFamily: 'Fira Mono, Menlo, Monaco, Consolas, monospace',
-              fontSize: 14,
-              minHeight: 300,
-              background: '#1a202c',
-              color: '#f8f8f2',
-              borderRadius: 8,
-              marginBottom: 16
-            }}
-            textareaId="html-editor"
-            textareaClassName="w-full border border-gray-300 dark:border-gray-700 rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+          <Suspense fallback={<div className="p-4 text-sm text-gray-500 dark:text-gray-400">Loading editor...</div>}>
+            <HtmlEditor value={editedHtml} onValueChange={setEditedHtml} />
+          </Suspense>
         ) : (
           <div className="relative">
             <div 

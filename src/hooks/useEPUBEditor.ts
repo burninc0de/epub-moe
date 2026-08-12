@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
+import { parseString } from 'xml2js';
 import { EPUBParser } from '../utils/epubParser';
 import { buildSMIL, calculateTotalDuration, updateOPFWithDuration } from '../utils/smilBuilder';
 import { EPUBData, EPUBChapter, SMILFragment, ContainerXML, OPFManifestItem } from '../types/epub';
@@ -631,8 +632,7 @@ export const useEPUBEditor = () => {
     const containerFile = newZip.file('META-INF/container.xml');
     if (containerFile) {
       const containerContent = await containerFile.async('text');
-      const parseString = (await import('xml2js')).parseString;
-      
+
       const containerXml = await new Promise<ContainerXML>((resolve, reject) => {
         parseString(containerContent, (err: Error | null, result: ContainerXML) => {
           if (err) reject(err);
