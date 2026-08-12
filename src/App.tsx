@@ -264,8 +264,8 @@ const App: React.FC = () => {
       {/* Top bar: full width above all columns */}
       <div className="flex-shrink-0 flex items-center justify-between gap-2 px-2 py-1 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center gap-2">
-          <div className="inline-flex items-center justify-center w-7 h-7 bg-blue-100 rounded-full dark:bg-blue-900">
-            <Feather className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+          <div className="inline-flex items-center justify-center w-6 h-6 bg-blue-100 rounded-full dark:bg-blue-900">
+            <Feather className="w-3 h-3 text-blue-600 dark:text-blue-400" />
           </div>
           <span className="font-semibold text-gray-900 dark:text-white">epub-moe</span>
           <button
