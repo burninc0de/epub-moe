@@ -436,7 +436,7 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
   }, []);
 
   // Helper to highlight the selected region in the waveform
-  const highlightFragmentRegion = (fragment: SMILFragment | null) => {
+  const highlightFragmentRegion = useCallback((fragment: SMILFragment | null) => {
     const regions = regionsPluginRef.current;
     if (regions && typeof regions.getRegions === 'function') {
       const allRegions = regions.getRegions(); // array of regions
@@ -453,7 +453,7 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
         }
       }
     }
-  };
+  }, [regionColorStyle]);
 
   const selectAndSeekFragment = (fragment: SMILFragment) => {
     // Select and seek (used for region clicks, prev/next, etc)
@@ -557,7 +557,7 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
       onFragmentSelectRef.current(null);
       highlightFragmentRegion(null);
     }
-  }, [currentTime, fragments]);
+  }, [currentTime, fragments, highlightFragmentRegion]);
 
   return (
     <div className="h-full flex flex-col bg-panel">
