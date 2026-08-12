@@ -57,3 +57,38 @@ html, body, #root {
 .waveform-scroll > div::part(scroll) {
   height: 100%;
 }
+
+/* Volume slider with a darker track */
+.volume-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+}
+.volume-slider::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+  background: #4B5563;
+}
+.volume-slider::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: #4B5563;
+}
+.volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -4px;
+  border-radius: 50%;
+  background: #60A5FA;
+  cursor: pointer;
+}
+.volume-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: none;
+  border-radius: 50%;
+  background: #60A5FA;
+  cursor: pointer;
+}

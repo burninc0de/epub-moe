@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState, useCallback, forwardRef, useImperativeHandle } from 'react';
 import WaveSurfer from 'wavesurfer.js';
 import RegionsPlugin from 'wavesurfer.js/dist/plugins/regions.js';
-import { Play, Pause, Square, ZoomIn, ZoomOut, RotateCcw, Clock, Magnet, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Play, Pause, Square, ZoomIn, ZoomOut, RotateCcw, Clock, Magnet, AlertTriangle, ChevronLeft, ChevronRight, Volume2, VolumeX } from 'lucide-react';
 import { SMILFragment } from '../types/epub';
 import { formatTime, parseTimeInput } from '../utils/time';
 
 const REGION_EPSILON = 0.01; // 10ms tolerance for floating point imprecision
+const VOLUME_KEY = 'waveformVolume';
+const DEFAULT_VOLUME = 1;
 
 interface WaveformViewerProps {
   audioBlob: Blob;
@@ -54,6 +56,12 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
   const [isWaveformLoading, setIsWaveformLoading] = useState(true);
   const [isSnapEnabled, setIsSnapEnabled] = useState(true);
   const [showForceNonOverlapDialog, setShowForceNonOverlapDialog] = useState(false);
+  const [volume, setVolume] = useState<number>(() => {
+    const stored = parseFloat(localStorage.getItem(VOLUME_KEY) ?? '');
+    if (!Number.isFinite(stored)) return DEFAULT_VOLUME;
+    return Math.min(1, Math.max(0, stored));
+  });
+  const lastVolumeRef = useRef<number>(DEFAULT_VOLUME);
   const audioUrlRef = useRef<string | null>(null);
 
   // Refs to hold the latest callbacks
@@ -68,6 +76,20 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
   useEffect(() => {
     isSnapEnabledRef.current = isSnapEnabled;
   }, [isSnapEnabled]);
+
+  useEffect(() => {
+    wavesurfer.current?.setVolume(volume);
+  }, [volume]);
+
+  const handleVolumeChange = (value: number) => {
+    setVolume(value);
+    if (value > 0) lastVolumeRef.current = value;
+    localStorage.setItem(VOLUME_KEY, String(value));
+  };
+
+  const toggleMute = () => {
+    handleVolumeChange(volume > 0 ? 0 : (lastVolumeRef.current > 0 ? lastVolumeRef.current : DEFAULT_VOLUME));
+  };
 
   const drawFragments = useCallback(() => {
     const regions = regionsPluginRef.current;
@@ -149,6 +171,7 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
     ws.on('ready', () => { 
       setIsWaveformLoading(false);
       ws.zoom(zoomLevel); 
+      ws.setVolume(volume);
       drawFragments(); 
     });
     ws.on('play', () => setIsPlaying(true)); ws.on('pause', () => setIsPlaying(false)); ws.on('timeupdate', (time) => setCurrentTime(time));
@@ -495,24 +518,42 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
   return (
     <div className="h-full flex flex-col bg-white border rounded-lg p-4 dark:bg-gray-800 dark:border-gray-700">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Audio Waveform</h3>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={toggleMute}
+            className="p-1.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600"
+            title={volume === 0 ? 'Unmute' : 'Mute'}
+          >
+            {volume === 0 ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+          </button>
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.01"
+            value={volume}
+            onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
+            className="volume-slider w-28 h-1.5 cursor-pointer"
+            title="Volume"
+          />
+        </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <button onClick={() => handleZoom(zoomLevel * 1.2)} className="p-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
+            <button onClick={() => handleZoom(zoomLevel * 1.2)} className="p-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600" title="Zoom In">
               <ZoomIn className="w-4 h-4" />
             </button>
-            <button onClick={() => handleZoom(zoomLevel / 1.2)} className="p-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
+            <button onClick={() => handleZoom(zoomLevel / 1.2)} className="p-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600" title="Zoom Out">
               <ZoomOut className="w-4 h-4" />
             </button>
-            <button onClick={() => handleZoom(DEFAULT_ZOOM)} className="p-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
+            <button onClick={() => handleZoom(DEFAULT_ZOOM)} className="p-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600" title="Reset Zoom">
               <RotateCcw className="w-4 h-4" />
             </button>
-            <button onClick={handleOffsetFromCursor} className="p-2 bg-orange-200 text-orange-700 rounded-lg hover:bg-orange-300 transition-colors dark:bg-orange-700 dark:text-white dark:hover:bg-orange-600" title="Apply Time Offset">
+            <button onClick={handleOffsetFromCursor} className="p-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600" title="Apply Time Offset">
               <Clock className="w-4 h-4" />
             </button>
             <button
               onClick={() => setShowForceNonOverlapDialog(true)}
-              className="p-2 bg-red-200 text-red-700 rounded-lg hover:bg-red-300 transition-colors dark:bg-red-700 dark:text-white dark:hover:bg-red-600"
+              className="p-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600"
               title="Force non-overlapping segments"
             >
               <AlertTriangle className="w-4 h-4" />
@@ -538,14 +579,14 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
-          <span className="text-sm text-gray-600 dark:text-gray-300">
+          <span className="text-sm text-gray-600 dark:text-gray-300 tabular-nums inline-block text-right min-w-[6rem]">
             {formatTime(currentTime)} / {formatTime(wavesurfer.current?.getDuration() || 0)}
           </span>
           <div className="flex gap-2">
-            <button onClick={togglePlayback} className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors dark:bg-blue-800 dark:hover:bg-blue-700">
+            <button onClick={togglePlayback} className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors dark:bg-blue-800 dark:hover:bg-blue-700" title={isPlaying ? 'Pause (Space)' : 'Play (Space)'}>
               {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
             </button>
-            <button onClick={stopPlayback} className="p-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors dark:bg-gray-700 dark:hover:bg-gray-600">
+            <button onClick={stopPlayback} className="p-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors dark:bg-gray-700 dark:hover:bg-gray-600" title="Stop">
               <Square className="w-4 h-4" />
             </button>
           </div>

@@ -96,16 +96,23 @@ const App: React.FC = () => {
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (isHtmlEditMode) return;
-      if (isInputField(document.activeElement)) return;
+
+      const active = document.activeElement;
+      const isRangeInput = active instanceof HTMLInputElement && active.type === 'range';
+      if (isInputField(active) && !isRangeInput) return;
 
       if (event.code === 'Space') {
-        event.preventDefault(); // Prevent default spacebar behavior (e.g., scrolling)
+        event.preventDefault(); // Prevent default spacebar behavior (e.g., scrolling, slider activation)
+        // Drop focus from a focused slider so it doesn't keep an ugly highlight
+        if (isRangeInput) (active as HTMLInputElement).blur();
         if (waveformViewerRef.current) {
           waveformViewerRef.current.togglePlayback();
         }
       } else if (event.code === 'ArrowLeft') {
+        if (isRangeInput) return; // Let the slider handle its own arrows
         waveformViewerRef.current?.prevFragment();
       } else if (event.code === 'ArrowRight') {
+        if (isRangeInput) return; // Let the slider handle its own arrows
         waveformViewerRef.current?.nextFragment();
       }
     };
