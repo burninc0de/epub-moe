@@ -11,7 +11,7 @@ interface SettingsPanelProps {
 export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, autoFollow, onAutoFollowChange }) => {
   return (
     <div className="h-full flex flex-col bg-white dark:bg-gray-900">
-      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+      <div className="flex items-center justify-between px-6 pt-6 pb-2">
         <div className="flex items-center gap-2">
           <Settings className="w-5 h-5 text-gray-600 dark:text-gray-300" />
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Settings</h2>
@@ -53,7 +53,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, autoFollo
         </div>
       </div>
 
-      <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+      <div className="px-6 pt-2 pb-6">
         <div className="flex items-center justify-center gap-2 text-sm text-gray-500 dark:text-gray-400">
           <a
             href="https://github.com/burninc0de/epub-moe"
