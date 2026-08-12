@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback, forwardRef, useImperativeHandle } from 'react';
+
 import WaveSurfer from 'wavesurfer.js';
 import RegionsPlugin from 'wavesurfer.js/dist/plugins/regions.js';
 import { Play, Pause, Square, ZoomIn, ZoomOut, RotateCcw, Clock, Magnet, AlertTriangle, ChevronLeft, ChevronRight, Volume2, VolumeX } from 'lucide-react';
@@ -24,6 +25,33 @@ interface WaveformViewerProps {
 const MIN_ZOOM = 10;
 const DEFAULT_ZOOM = 20;
 const MAX_ZOOM = 200;
+
+const EQ_BAR_COUNT = 13;
+
+const useEqLevels = (count: number, intervalMs: number, active: boolean) => {
+  const [levels, setLevels] = useState(() => new Array(count).fill(0.08));
+
+  useEffect(() => {
+    if (!active) return;
+    const id = window.setInterval(() => {
+      const freqs = [1 + Math.random() * 2, 2 + Math.random() * 3];
+      const phases = [Math.random() * Math.PI * 2, Math.random() * Math.PI * 2];
+      setLevels(
+        Array.from({ length: count }, (_, i) => {
+          const t = i / (count - 1);
+          const envelope = Math.sin(t * Math.PI);
+          let v = 0;
+          freqs.forEach((f, k) => { v += Math.sin(t * f * Math.PI + phases[k]); });
+          v = Math.abs(v) / freqs.length;
+          return 0.08 + v * envelope * 0.9;
+        })
+      );
+    }, intervalMs);
+    return () => window.clearInterval(id);
+  }, [count, intervalMs, active]);
+
+  return levels;
+};
 
 export interface WaveformViewerHandles {
   togglePlayback: () => void;
@@ -55,6 +83,7 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
   const [offsetTime, setOffsetTime] = useState('');
   const [offsetValue, setOffsetValue] = useState('');
   const [isWaveformLoading, setIsWaveformLoading] = useState(true);
+  const eqLevels = useEqLevels(EQ_BAR_COUNT, 120, isWaveformLoading);
   const [isSnapEnabled, setIsSnapEnabled] = useState(true);
   const [showForceNonOverlapDialog, setShowForceNonOverlapDialog] = useState(false);
   const [volume, setVolume] = useState<number>(() => {
@@ -607,11 +636,20 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
           }}
         />
         {isWaveformLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-panel">
-            <div className="flex items-center gap-2 text-gray-500">
-              <div className="w-4 h-4 border-2 border-gray-700 border-t-gray-400 rounded-full animate-spin"></div>
-              <span className="text-sm">Loading waveform...</span>
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-panel">
+            <div className="flex h-5 items-center gap-1">
+              {eqLevels.map((level, i) => {
+                const isEdge = i === 0 || i === eqLevels.length - 1;
+                return (
+                  <div
+                    key={i}
+                    className={isEdge ? 'eq-bar eq-bar-dot' : 'eq-bar'}
+                    style={{ height: isEdge ? '3px' : `${4 + 16 * level}px` }}
+                  />
+                );
+              })}
             </div>
+            <span className="text-xs text-gray-500">Loading waveform...</span>
           </div>
         )}
       </div>

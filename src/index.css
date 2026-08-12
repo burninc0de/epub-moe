@@ -78,3 +78,17 @@ html, body, #root {
   background: #60A5FA;
   cursor: pointer;
 }
+
+/* Equalizer-bars loading indicator (heights driven by JS, see useEqLevels) */
+.eq-bar {
+  width: 3px;
+  border-radius: 2px;
+  background: #60A5FA;
+  transition: height 0.15s ease-out;
+}
+
+.eq-bar-dot {
+  border-radius: 50%;
+  width: 3px;
+  height: 3px;
+}
