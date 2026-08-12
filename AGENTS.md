@@ -16,6 +16,7 @@ npm run lint     # ESLint - works; see notes below
 - **`npm run lint` works.** It needs `typescript-eslint` at a recent 8.x (bumped from ^8.3.0 to ^8.66.0) to be compatible with ESLint 9, and `package.json` scopes the `brace-expansion` override to `minimatch@3.1.5` (`^1.1.11`) so ESLint's config matcher doesn't get the incompatible v5.
 - **Playwright smoke tests** live in `e2e/smoke.spec.ts` and cover the basics: EPUB opens, waveform renders, HTML editor opens, EPUB exports. They run against `npm run preview` (production build) via `playwright.config.ts` — build before testing if you changed code.
 - **No typecheck script.** `tsc --noEmit` is enabled via `tsconfig.app.json` (strict, `noUnusedLocals`, `noUnusedParameters`), but nothing invokes it. To typecheck manually: `npx tsc -b`.
+- **Screenshots for visual verification.** `node scripts/screenshot.js /tmp/screenshot.png` opens the app via Playwright, loads the fixture EPUB, and saves a viewport screenshot. Use it when you need to visually verify a UI change — the Read tool can display the resulting PNG.
 
 ## Architecture
 
