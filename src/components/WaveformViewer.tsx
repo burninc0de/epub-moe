@@ -4,6 +4,7 @@ import RegionsPlugin from 'wavesurfer.js/dist/plugins/regions.js';
 import { Play, Pause, Square, ZoomIn, ZoomOut, RotateCcw, Clock, Magnet, AlertTriangle, ChevronLeft, ChevronRight, Volume2, VolumeX } from 'lucide-react';
 import { SMILFragment } from '../types/epub';
 import { formatTime, parseTimeInput } from '../utils/time';
+import { Button, IconButton, FieldLabel, TextInput, ToolbarDivider, Modal } from './ui';
 
 const REGION_EPSILON = 0.01; // 10ms tolerance for floating point imprecision
 const VOLUME_KEY = 'waveformVolume';
@@ -119,14 +120,14 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
         existingRegion.setOptions({
           start: fragment.clipBegin,
           end: fragment.clipEnd,
-          color: isSelected ? 'rgba(96, 165, 250, 0.3)' : 'rgba(16, 185, 129, 0.2)',
+          color: isSelected ? 'rgba(59, 130, 246, 0.3)' : 'rgba(96, 165, 250, 0.12)',
         });
       } else {
         // Add new region - create region options once
         regions.addRegion({
           start: fragment.clipBegin,
           end: fragment.clipEnd,
-          color: isSelected ? 'rgba(96, 165, 250, 0.3)' : 'rgba(16, 185, 129, 0.2)',
+          color: isSelected ? 'rgba(59, 130, 246, 0.3)' : 'rgba(96, 165, 250, 0.12)',
           drag: true,
           resize: true,
           id: fragment.id,
@@ -402,13 +403,13 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
       const allRegions = regions.getRegions(); // array of regions
       allRegions.forEach(region => {
         if (region && typeof region.setOptions === 'function') {
-          region.setOptions({ color: 'rgba(16, 185, 129, 0.2)' });
+          region.setOptions({ color: 'rgba(96, 165, 250, 0.12)' });
         }
       });
       if (fragment) {
         const selectedRegion = allRegions.find(region => region.id === fragment.id);
         if (selectedRegion && typeof selectedRegion.setOptions === 'function') {
-          selectedRegion.setOptions({ color: 'rgba(96, 165, 250, 0.3)' });
+          selectedRegion.setOptions({ color: 'rgba(59, 130, 246, 0.3)' });
         }
       }
     }
@@ -519,16 +520,15 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
   }, [currentTime, fragments]);
 
   return (
-    <div className="h-full flex flex-col bg-white border rounded-lg p-4 dark:bg-gray-800 dark:border-gray-700">
-      <div className="flex items-center justify-between mb-4">
+    <div className="h-full flex flex-col bg-panel">
+      <div className="h-11 flex-shrink-0 flex items-center justify-between gap-2 px-3 border-b border-line">
         <div className="flex items-center gap-2">
-          <button
+          <IconButton
             onClick={toggleMute}
-            className="p-1.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600"
             title={volume === 0 ? 'Unmute' : 'Mute'}
           >
             {volume === 0 ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-          </button>
+          </IconButton>
           <input
             type="range"
             min="0"
@@ -536,62 +536,61 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
             step="0.01"
             value={volume}
             onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
-            className="volume-slider w-28 h-1.5 cursor-pointer"
+            className="volume-slider w-24 cursor-pointer"
             title="Volume"
           />
         </div>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <button onClick={() => handleZoom(zoomLevel * 1.2)} className="p-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600" title="Zoom In">
+        <div className="flex items-center">
+          <div className="flex items-center gap-1">
+            <IconButton onClick={() => handleZoom(zoomLevel * 1.2)} title="Zoom In">
               <ZoomIn className="w-4 h-4" />
-            </button>
-            <button onClick={() => handleZoom(zoomLevel / 1.2)} className="p-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600" title="Zoom Out">
+            </IconButton>
+            <IconButton onClick={() => handleZoom(zoomLevel / 1.2)} title="Zoom Out">
               <ZoomOut className="w-4 h-4" />
-            </button>
-            <button onClick={() => handleZoom(DEFAULT_ZOOM)} className="p-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600" title="Reset Zoom">
+            </IconButton>
+            <IconButton onClick={() => handleZoom(DEFAULT_ZOOM)} title="Reset Zoom">
               <RotateCcw className="w-4 h-4" />
-            </button>
-            <button onClick={handleOffsetFromCursor} className="p-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600" title="Apply Time Offset">
+            </IconButton>
+          </div>
+          <ToolbarDivider />
+          <div className="flex items-center gap-1">
+            <IconButton onClick={handleOffsetFromCursor} title="Apply Time Offset">
               <Clock className="w-4 h-4" />
-            </button>
-            <button
+            </IconButton>
+            <IconButton
               onClick={() => setShowForceNonOverlapDialog(true)}
-              className="p-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600"
               title="Force non-overlapping segments"
             >
               <AlertTriangle className="w-4 h-4" />
-            </button>
-            <button
+            </IconButton>
+            <IconButton
               onClick={() => setIsSnapEnabled((value) => !value)}
-              className={`p-2 rounded-lg transition-colors ${
-                isSnapEnabled
-                  ? 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600'
-                  : 'bg-red-200 text-red-700 hover:bg-red-300 dark:bg-red-700 dark:text-white dark:hover:bg-red-600'
-              }`}
+              active={!isSnapEnabled}
+              activeClassName="bg-red-500/15 text-red-400 hover:bg-red-500/25"
               title={isSnapEnabled ? 'Disable boundary snap' : 'Enable boundary snap'}
             >
               <Magnet className="w-4 h-4" />
-            </button>
+            </IconButton>
           </div>
-          {/* Next/Previous Fragment Buttons */}
-          <div className="flex items-center gap-2">
-            <button onClick={handlePrevFragment} className="p-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600" title="Previous Fragment" disabled={selectedFragmentIndex <= 0}>
+          <ToolbarDivider />
+          <div className="flex items-center gap-1">
+            <IconButton onClick={handlePrevFragment} title="Previous Fragment" disabled={selectedFragmentIndex <= 0}>
               <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button onClick={handleNextFragment} className="p-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600" title="Next Fragment" disabled={selectedFragmentIndex === -1 || selectedFragmentIndex >= fragments.length - 1}>
+            </IconButton>
+            <IconButton onClick={handleNextFragment} title="Next Fragment" disabled={selectedFragmentIndex === -1 || selectedFragmentIndex >= fragments.length - 1}>
               <ChevronRight className="w-4 h-4" />
-            </button>
+            </IconButton>
           </div>
-          <span className="text-sm text-gray-600 dark:text-gray-300 tabular-nums inline-block text-right min-w-[6rem]">
+          <span className="text-xs text-gray-400 tabular-nums inline-block text-right min-w-[5.5rem] mx-2">
             {formatTime(currentTime)} / {formatTime(wavesurfer.current?.getDuration() || 0)}
           </span>
-          <div className="flex gap-2">
-            <button onClick={togglePlayback} className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors dark:bg-blue-800 dark:hover:bg-blue-700" title={isPlaying ? 'Pause (Space)' : 'Play (Space)'}>
+          <div className="flex items-center gap-1">
+            <IconButton variant="primary" onClick={togglePlayback} title={isPlaying ? 'Pause (Space)' : 'Play (Space)'}>
               {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-            </button>
-            <button onClick={stopPlayback} className="p-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors dark:bg-gray-700 dark:hover:bg-gray-600" title="Stop">
+            </IconButton>
+            <IconButton onClick={stopPlayback} title="Stop">
               <Square className="w-4 h-4" />
-            </button>
+            </IconButton>
           </div>
         </div>
       </div>
@@ -608,9 +607,9 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
           }}
         />
         {isWaveformLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-50 dark:bg-gray-800 rounded">
-            <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
-              <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-500 rounded-full animate-spin"></div>
+          <div className="absolute inset-0 flex items-center justify-center bg-panel">
+            <div className="flex items-center gap-2 text-gray-500">
+              <div className="w-4 h-4 border-2 border-gray-700 border-t-gray-400 rounded-full animate-spin"></div>
               <span className="text-sm">Loading waveform...</span>
             </div>
           </div>
@@ -619,90 +618,69 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
 
       {/* Time Offset Dialog */}
       {showOffsetDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-96 dark:bg-gray-800">
-            <h3 className="text-lg font-semibold mb-4 dark:text-white">Apply Time Offset</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">
-                  From Time (mm:ss)
-                </label>
-                <input
-                  type="text"
-                  value={offsetTime}
-                  onChange={(e) => setOffsetTime(e.target.value)}
-                  placeholder="1:23"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">
-                  Offset (seconds, can be negative)
-                </label>
-                <input
-                  type="text"
-                  value={offsetValue}
-                  onChange={(e) => setOffsetValue(e.target.value)}
-                  placeholder="-2.5 or +1.2"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                />
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                This will shift all fragments starting from the specified time by the offset amount.
-              </div>
-              <div className="flex gap-3 justify-end">
-                <button
-                  onClick={() => setShowOffsetDialog(false)}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleApplyOffset}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 dark:bg-blue-800 dark:hover:bg-blue-700"
-                >
-                  Apply Offset
-                </button>
-              </div>
+        <Modal title="Apply Time Offset" onClose={() => setShowOffsetDialog(false)} className="max-w-sm">
+          <div className="space-y-4">
+            <div>
+              <FieldLabel>From Time (mm:ss)</FieldLabel>
+              <TextInput
+                type="text"
+                value={offsetTime}
+                onChange={(e) => setOffsetTime(e.target.value)}
+                placeholder="1:23"
+              />
+            </div>
+            <div>
+              <FieldLabel>Offset (seconds, can be negative)</FieldLabel>
+              <TextInput
+                type="text"
+                value={offsetValue}
+                onChange={(e) => setOffsetValue(e.target.value)}
+                placeholder="-2.5 or +1.2"
+              />
+            </div>
+            <div className="text-xs text-gray-500">
+              This will shift all fragments starting from the specified time by the offset amount.
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button variant="ghost" onClick={() => setShowOffsetDialog(false)}>
+                Cancel
+              </Button>
+              <Button variant="primary" onClick={handleApplyOffset}>
+                Apply Offset
+              </Button>
             </div>
           </div>
-        </div>
+        </Modal>
       )}
 
       {showForceNonOverlapDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-96 dark:bg-gray-800">
-            <h3 className="text-lg font-semibold mb-3 dark:text-white">Force Align to Text Sequence</h3>
-            <div className="text-sm text-gray-600 dark:text-gray-300 mb-5 space-y-2">
-              <p>
-                This rewrites all fragment timings to match the chapter text order exactly.
-              </p>
-              <p>
-                It creates continuous coverage from 0:00 to the end of the audio with no gaps and no overlaps.
-              </p>
-              <p className="font-medium text-red-600 dark:text-red-400">
-                Warning: existing manual timings will be replaced.
-              </p>
-            </div>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setShowForceNonOverlapDialog(false)}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  onForceNonOverlapping(wavesurfer.current?.getDuration() || 0);
-                  setShowForceNonOverlapDialog(false);
-                }}
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600"
-              >
-                Force Align
-              </button>
-            </div>
+        <Modal title="Force Align to Text Sequence" onClose={() => setShowForceNonOverlapDialog(false)} className="max-w-sm">
+          <div className="text-sm text-gray-400 mb-5 space-y-2">
+            <p>
+              This rewrites all fragment timings to match the chapter text order exactly.
+            </p>
+            <p>
+              It creates continuous coverage from 0:00 to the end of the audio with no gaps and no overlaps.
+            </p>
+            <p className="font-medium text-red-400">
+              Warning: existing manual timings will be replaced.
+            </p>
           </div>
-        </div>
+          <div className="flex gap-2 justify-end">
+            <Button variant="ghost" onClick={() => setShowForceNonOverlapDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              onClick={() => {
+                onForceNonOverlapping(wavesurfer.current?.getDuration() || 0);
+                setShowForceNonOverlapDialog(false);
+              }}
+            >
+              Force Align
+            </Button>
+          </div>
+        </Modal>
       )}
 
     </div>

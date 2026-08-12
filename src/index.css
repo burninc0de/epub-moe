@@ -6,47 +6,34 @@ html, body, #root {
   height: 100%;
   margin: 0;
   padding: 0;
-  overflow: hidden; /* Prevent scrolling on html/body if content overflows */
+  overflow: hidden;
+  background-color: #030712;
 }
 
-/* Webkit scrollbar styling */
 ::-webkit-scrollbar {
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-gray-100;
-}
-
-.dark ::-webkit-scrollbar-track {
-  @apply bg-gray-800;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-gray-400 rounded-md;
-}
-
-.dark ::-webkit-scrollbar-thumb {
-  @apply bg-gray-600 rounded-md;
+  @apply bg-gray-700 rounded-full border-2 border-solid border-transparent bg-clip-padding;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-gray-500;
+  @apply bg-gray-600;
 }
 
-.dark ::-webkit-scrollbar-thumb:hover {
-  @apply bg-gray-500;
+::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
-/* Firefox scrollbar styling */
 * {
-  scrollbar-width: auto;
-  scrollbar-color: #9CA3AF #F3F4F6; /* thumb / track */
-}
-
-.dark * {
-  scrollbar-color: #4B5563 #1F2937; /* thumb / track */
+  scrollbar-width: thin;
+  scrollbar-color: #374151 transparent;
 }
 
 /* Shadow-DOM scrollbar is 100% height so it stays pinned while the throttled canvas redraw catches up */
@@ -58,35 +45,34 @@ html, body, #root {
   height: 100%;
 }
 
-/* Volume slider with a darker track */
 .volume-slider {
   -webkit-appearance: none;
   appearance: none;
   background: transparent;
 }
 .volume-slider::-webkit-slider-runnable-track {
-  height: 6px;
-  border-radius: 3px;
-  background: #4B5563;
+  height: 4px;
+  border-radius: 2px;
+  background: #374151;
 }
 .volume-slider::-moz-range-track {
-  height: 6px;
-  border-radius: 3px;
-  background: #4B5563;
+  height: 4px;
+  border-radius: 2px;
+  background: #374151;
 }
 .volume-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   margin-top: -4px;
   border-radius: 50%;
   background: #60A5FA;
   cursor: pointer;
 }
 .volume-slider::-moz-range-thumb {
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   border: none;
   border-radius: 50%;
   background: #60A5FA;

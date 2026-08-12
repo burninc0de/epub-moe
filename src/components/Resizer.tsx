@@ -6,17 +6,14 @@ interface ResizerProps {
 }
 
 export const Resizer: React.FC<ResizerProps> = ({ onMouseDown, direction = 'horizontal' }) => {
-    const baseClasses = "bg-gray-300 dark:bg-gray-700 hover:bg-blue-500 dark:hover:bg-blue-600 transition-colors duration-200";
     const directionClasses = direction === 'horizontal'
-        ? "w-2 h-full cursor-col-resize"
-        : "h-2 w-full cursor-ns-resize";
-    
+        ? "w-1.5 h-full cursor-col-resize"
+        : "h-1.5 w-full cursor-ns-resize";
+
     return (
         <div
             onMouseDown={onMouseDown}
-            className={`${baseClasses} ${directionClasses} flex-shrink-0 flex items-center justify-center`}
-        >
-             <div className={direction === 'horizontal' ? "w-1 h-8 bg-gray-500 dark:bg-gray-600 rounded-full" : "w-8 h-1 bg-gray-500 dark:bg-gray-600 rounded-full"}></div>
-        </div>
+            className={`${directionClasses} flex-shrink-0 bg-transparent hover:bg-blue-500/50 transition-colors duration-150`}
+        />
     );
 };

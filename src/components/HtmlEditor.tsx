@@ -24,7 +24,7 @@ const HtmlEditor = ({ value, onValueChange }: HtmlEditorProps) => (
       marginBottom: 16,
     }}
     textareaId="html-editor"
-    textareaClassName="w-full border border-gray-300 dark:border-gray-700 rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+    textareaClassName="w-full border border-gray-700 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
   />
 );
 

@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState, lazy, Suspense } from 'react';
 import './ContentViewer.css';
 import { Scissors, AlignJustify, Text, Code } from 'lucide-react';
 import { EPUBChapter, SMILFragment, FragmentSpacing, FRAGMENT_SPACING_CLASSES } from '../types/epub';
+import { Button, IconButton } from './ui';
 
 const HtmlEditor = lazy(() => import('./HtmlEditor'));
 
@@ -111,8 +112,8 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
 
   if (!chapter) {
     return (
-      <div className="flex-1 bg-gray-50 flex items-center justify-center dark:bg-gray-800">
-        <p className="text-gray-600 dark:text-gray-300">Select a chapter to view its content</p>
+      <div className="flex-1 bg-base flex items-center justify-center">
+        <p className="text-sm text-gray-500">Select a chapter to view its content</p>
       </div>
     );
   }
@@ -139,8 +140,8 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
           const spacingClass = FRAGMENT_SPACING_CLASSES[fragmentSpacing];
           const marginClass = isBlockDisplay ? spacingClass : '';
           let className = isSelected
-            ? `${marginClass ? marginClass + ' ' : ''}bg-blue-200 dark:bg-blue-800 border border-blue-400 dark:border-blue-600 rounded px-1`
-            : `${isBlockDisplay ? 'block ' : ''}bg-gray-100 dark:bg-gray-800 border border-green-300 w-fit ${marginClass ? marginClass + ' ' : ''}dark:border-gray-600 rounded px-1 hover:bg-green-200 dark:hover:bg-gray-700`;
+            ? `${marginClass ? marginClass + ' ' : ''}bg-blue-500/25 border border-blue-500/70 rounded px-1`
+            : `${isBlockDisplay ? 'block ' : ''}bg-raised border border-gray-700 w-fit ${marginClass ? marginClass + ' ' : ''}rounded px-1 hover:bg-gray-700 hover:border-gray-500`;
 
           if (isCutToolActive) {
             className += ' cursor-crosshair';
@@ -381,11 +382,11 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
   };
 
   return (
-    <div className="content-viewer flex-1 bg-white flex flex-col dark:bg-gray-900">
-      <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 z-10 bg-white dark:bg-gray-900">
-        <p className="text-sm text-gray-600 dark:text-gray-300">{chapter.href}</p>
-        <div className="flex items-center gap-2">
-          <button 
+    <div className="content-viewer flex-1 bg-base flex flex-col">
+      <div className="h-11 flex-shrink-0 px-3 border-b border-line flex justify-between items-center gap-2 sticky top-0 z-10 bg-panel">
+        <p className="text-xs text-gray-500 font-mono truncate">{chapter.href}</p>
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <IconButton
             onClick={() => setIsCutToolActive(!isCutToolActive)}
             onDoubleClick={() => {
               if (isCutToolSticky) {
@@ -398,63 +399,61 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
                 if (!isCutToolActive) setIsCutToolActive(true);
               }
             }}
-            className={`p-1.5 rounded-md transition-colors ${
-              isCutToolSticky
-                ? 'bg-orange-600 text-white hover:bg-orange-700'
-                : isCutToolActive 
-                  ? 'bg-blue-600 text-white hover:bg-blue-700'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600'
-            }`}
+            active={isCutToolActive}
+            activeClassName={isCutToolSticky
+              ? 'bg-orange-500/15 text-orange-400 hover:bg-orange-500/25'
+              : 'bg-blue-500/15 text-blue-400 hover:bg-blue-500/25'
+            }
             title={isCutToolSticky ? 'Cut Tool (Sticky Mode) - Double-click to disable' : isCutToolActive ? 'Deactivate Cut Tool - Double-click for sticky mode' : 'Activate Cut Tool - Double-click for sticky mode'}
           >
             <Scissors className="w-4 h-4" />
-          </button>
-          <button 
+          </IconButton>
+          <IconButton
             onClick={() => setIsBlockDisplay(!isBlockDisplay)}
-            className={`p-1.5 rounded-md transition-colors ${
-              'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600'
-            }`}
             title={isBlockDisplay ? 'Show fragments in flow text' : 'Show fragments as lines'}
           >
             {isBlockDisplay ? <AlignJustify className="w-4 h-4" /> : <Text className="w-4 h-4" />}
-          </button>
+          </IconButton>
           {isHtmlEditMode ? (
             <span
-              className="p-1.5 rounded-md bg-yellow-600 text-white cursor-default"
+              className="p-1.5 rounded-md bg-amber-500/15 text-amber-400 cursor-default"
               title="HTML edit mode active - save or cancel to leave"
             >
               <Code className="w-4 h-4" />
             </span>
           ) : (
-            <button
+            <IconButton
               onClick={() => {
                 setEditedHtml(chapter.content);
                 setIsHtmlEditMode(true);
               }}
-              className="p-1.5 rounded-md transition-colors bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
               title="Edit HTML Source"
             >
               <Code className="w-4 h-4" />
-            </button>
+            </IconButton>
           )}
             {isHtmlEditMode && (
               <>
-                <button
-                  className="ml-2 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                <Button
+                  variant="primary"
+                  size="sm"
+                  className="ml-1.5"
                   onClick={() => {
                     if (editedHtml && onHtmlUpdate) {
                       onHtmlUpdate(editedHtml);
                     }
                     setIsHtmlEditMode(false);
                   }}
-                >Save</button>
-                <button
-                  className="ml-1 px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+                >Save</Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="ml-1"
                   onClick={() => {
                     setIsHtmlEditMode(false);
                     setEditedHtml(null);
                   }}
-                >Cancel</button>
+                >Cancel</Button>
               </>
             )}
             {!isHtmlEditMode && (
@@ -471,7 +470,7 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
                     if (e.key === 'Escape') setIsEditingZoom(false);
                   }}
                   onBlur={() => commitZoom(zoomInput)}
-                  className="w-12 text-center py-1.5 rounded-md text-xs font-medium bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  className="w-14 text-center py-1 rounded-md text-xs font-medium bg-base border border-gray-700 text-gray-100 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   title="Zoom (Ctrl+scroll to zoom text)"
                 />
               ) : (
@@ -485,7 +484,7 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
                     setZoomInput(String(Math.round(fontScale * 100)));
                     setIsEditingZoom(true);
                   }}
-                  className="w-12 text-center px-2 py-1.5 rounded-md text-xs font-medium bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+                  className="h-7 px-2 rounded-md text-xs font-medium tabular-nums text-gray-400 hover:text-gray-100 hover:bg-raised transition-colors"
                   title="Click to reset zoom, right-click to set a custom value (Ctrl+scroll to zoom text)"
                 >
                   {Math.round(fontScale * 100)}%
@@ -497,18 +496,17 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
 
       <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-6">
         {splitNotice && (
-          <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-900/40 dark:text-amber-200">
+          <div className="mb-4 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-300">
             {splitNotice}
           </div>
         )}
         {isHtmlEditMode && editedHtml !== null ? (
-          <Suspense fallback={<div className="p-4 text-sm text-gray-500 dark:text-gray-400">Loading editor...</div>}>
+          <Suspense fallback={<div className="p-4 text-sm text-gray-500">Loading editor...</div>}>
             <HtmlEditor value={editedHtml} onValueChange={setEditedHtml} />
           </Suspense>
         ) : (
           <div className="relative">
             <div 
-              className="prose max-w-none dark:prose-invert"
               style={{ fontSize: `${fontScale}rem` }}
               onClick={handleContentClick}
               onMouseMove={handleContentMouseMove}
@@ -531,10 +529,8 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
       </div>
 
       {fragments.length > 0 && (
-        <div className="border-t border-gray-200 p-4 dark:border-gray-700">
-          <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-300">
-            <span className="ml-auto">{fragments.length} fragments total</span>
-          </div>
+        <div className="h-7 flex-shrink-0 border-t border-line px-3 flex items-center text-xs text-gray-500">
+          <span className="ml-auto">{fragments.length} fragments total</span>
         </div>
       )}
     </div>
