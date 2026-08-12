@@ -4,9 +4,11 @@ import { version } from '../../package.json';
 
 interface SettingsPanelProps {
   onClose: () => void;
+  autoFollow: boolean;
+  onAutoFollowChange: (value: boolean) => void;
 }
 
-export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose }) => {
+export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, autoFollow, onAutoFollowChange }) => {
   return (
     <div className="h-full flex flex-col bg-white dark:bg-gray-900">
       <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
@@ -24,9 +26,31 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose }) => {
       </div>
 
       <div className="flex-1 overflow-y-auto p-6">
-        <p className="text-gray-500 dark:text-gray-400">
-          Settings coming soon.
-        </p>
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-medium text-gray-900 dark:text-white">Auto-follow fragments</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Scroll the text viewer to center the fragment when selecting audio.
+              </p>
+            </div>
+            <button
+              role="switch"
+              aria-checked={autoFollow}
+              onClick={() => onAutoFollowChange(!autoFollow)}
+              className={`relative inline-flex items-center h-6 w-11 rounded-full transition-colors flex-shrink-0 ${
+                autoFollow ? 'bg-blue-600 dark:bg-blue-800' : 'bg-gray-300 dark:bg-gray-600'
+              }`}
+              title="Toggle auto-follow"
+            >
+              <span
+                className={`inline-block w-4 h-4 transform rounded-full bg-white transition-transform ${
+                  autoFollow ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700">

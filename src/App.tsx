@@ -12,6 +12,7 @@ import { Upload, Loader2, PanelRightOpen, PanelRightClose, PanelLeftOpen, PanelL
 declare const __AUTO_LOAD_EPUB__: string;
 
 const WAVEFORM_HEIGHT_KEY = 'waveformHeight';
+const AUTO_FOLLOW_KEY = 'autoFollow';
 const MIN_WAVEFORM_HEIGHT = 192;
 const MIN_TOP_SECTION_HEIGHT = 100;
 const RESIZER_HEIGHT = 8;
@@ -34,6 +35,7 @@ const App: React.FC = () => {
   const [isRightPanelCollapsed, setIsRightPanelCollapsed] = useState(false);
   const [isLeftPanelCollapsed, setIsLeftPanelCollapsed] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [autoFollow, setAutoFollow] = useState(() => localStorage.getItem(AUTO_FOLLOW_KEY) !== 'false');
   const savedRightPanelWidth = useRef(rightPanelWidth);
   const savedLeftPanelWidth = useRef(leftPanelWidth);
 
@@ -157,6 +159,11 @@ const App: React.FC = () => {
       setIsLoadingExport(false);
     }
   }, [exportEPUB]);
+
+  const handleAutoFollowChange = useCallback((value: boolean) => {
+    setAutoFollow(value);
+    localStorage.setItem(AUTO_FOLLOW_KEY, String(value));
+  }, []);
 
   useEffect(() => {
     const path = __AUTO_LOAD_EPUB__;
@@ -326,7 +333,11 @@ const App: React.FC = () => {
         <div className="flex-1 flex flex-col min-w-0">
           <div className="flex-1 overflow-y-auto">
             {isSettingsOpen ? (
-              <SettingsPanel onClose={() => setIsSettingsOpen(false)} />
+              <SettingsPanel
+                onClose={() => setIsSettingsOpen(false)}
+                autoFollow={autoFollow}
+                onAutoFollowChange={handleAutoFollowChange}
+              />
             ) : (
               <ContentViewer
               chapter={currentChapter}
@@ -357,6 +368,7 @@ const App: React.FC = () => {
               setIsHtmlEditMode={setIsHtmlEditMode}
               isBlockDisplay={isBlockDisplay}
               setIsBlockDisplay={setIsBlockDisplay}
+              autoFollow={autoFollow}
             />
             )}
           </div>

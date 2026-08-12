@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import './ContentViewer.css';
 import { Scissors, AlignJustify, Text, Code } from 'lucide-react';
 import { EPUBChapter, SMILFragment } from '../types/epub';
@@ -23,6 +23,7 @@ interface ContentViewerProps {
   setIsHtmlEditMode: React.Dispatch<React.SetStateAction<boolean>>;
   isBlockDisplay: boolean;
   setIsBlockDisplay: (isBlock: boolean) => void;
+  autoFollow?: boolean;
 }
 
 export const ContentViewer: React.FC<ContentViewerProps> = ({
@@ -37,18 +38,29 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
   isHtmlEditMode,
   setIsHtmlEditMode,
   isBlockDisplay,
-  setIsBlockDisplay
+  setIsBlockDisplay,
+  autoFollow = true
 }) => {
   const [editedHtml, setEditedHtml] = useState<string | null>(null);
   const [isCutToolSticky, setIsCutToolSticky] = useState<boolean>(false);
   const [cutPreviewPosition, setCutPreviewPosition] = useState<{ x: number; y: number; height: number } | null>(null);
   const [splitNotice, setSplitNotice] = useState<string | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!splitNotice) return;
     const timeout = window.setTimeout(() => setSplitNotice(null), 2200);
     return () => window.clearTimeout(timeout);
   }, [splitNotice]);
+
+  useEffect(() => {
+    if (!selectedFragment || !autoFollow) return;
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    const el = container.querySelector(`[data-fragment-id="${selectedFragment.id}"]`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+  }, [selectedFragment, autoFollow]);
 
   if (!chapter) {
     return (
@@ -397,7 +409,7 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-6">
         {splitNotice && (
           <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-900/40 dark:text-amber-200">
             {splitNotice}
