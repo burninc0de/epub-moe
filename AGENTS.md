@@ -41,6 +41,9 @@ npm run lint     # ESLint - works; see notes below
 - Import ordering: React → third-party → local (`./` or `src/` paths).
 - Functional components with hooks; `useCallback`/`useMemo` for handlers and derived data; `useRef` for imperative handles (e.g. `WaveformViewerHandles`).
 - Error handling: try/catch async, user-facing message in UI, `console.error` for details.
+- **Styling is dark-only.** The `dark` class is still forced in `main.tsx`, but components no longer carry `dark:` variants or light-mode base classes — write new styles dark-first, no `dark:` prefix.
+- **Use the shared primitives** in `src/components/ui.tsx` (`Button`, `IconButton`, `PanelHeader`, `SectionLabel`, `FieldLabel`, `TextInput`, `ToolbarDivider`, `Modal`) instead of hand-rolling button/input/modal classes.
+- **Surface tokens** are defined in `tailwind.config.js`: `base` (app canvas), `panel` (chrome surfaces), `raised` (hover fills/chips on panels), `line` (dividers). Use them (`bg-panel`, `border-line`, ...) rather than raw `gray-*` for surfaces; raw grays are fine for text (`gray-100`/`400`/`500`). Blue-500/600 is the single accent; don't introduce new accent colors. Panel headers are `h-11` everywhere to keep column chrome aligned.
 
 ## Docs
 
