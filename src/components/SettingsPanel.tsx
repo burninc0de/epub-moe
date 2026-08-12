@@ -23,7 +23,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   onOnlyAudioChaptersChange,
 }) => {
   return (
-    <div className="h-full flex flex-col bg-white dark:bg-gray-900">
+    <div className="w-full max-w-lg max-h-[85vh] flex flex-col bg-white rounded-lg shadow-xl dark:bg-gray-800">
       <div className="flex items-center justify-between px-6 pt-6 pb-2">
         <div className="flex items-center gap-2">
           <Settings className="w-5 h-5 text-gray-600 dark:text-gray-300" />

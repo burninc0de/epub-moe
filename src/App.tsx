@@ -362,21 +362,10 @@ const App: React.FC = () => {
           </>
         )}
 
-        {/* Middle Column (ContentViewer or Settings) */}
+        {/* Middle Column (ContentViewer) */}
         <div className="flex-1 flex flex-col min-w-0">
           <div className="flex-1 overflow-y-auto">
-            {isSettingsOpen ? (
-              <SettingsPanel
-                onClose={() => setIsSettingsOpen(false)}
-                autoFollow={autoFollow}
-                onAutoFollowChange={handleAutoFollowChange}
-                fragmentSpacing={fragmentSpacing}
-                onFragmentSpacingChange={handleFragmentSpacingChange}
-                onlyAudioChapters={onlyAudioChapters}
-                onOnlyAudioChaptersChange={handleOnlyAudioChaptersChange}
-              />
-            ) : (
-              <ContentViewer
+            <ContentViewer
               chapter={currentChapter}
               fragments={fragments}
               selectedFragment={selectedFragment}
@@ -408,7 +397,6 @@ const App: React.FC = () => {
               autoFollow={autoFollow}
               fragmentSpacing={fragmentSpacing}
             />
-            )}
           </div>
         </div>
 
@@ -447,6 +435,25 @@ const App: React.FC = () => {
             />
           </div>
         </>
+      )}
+
+      {isSettingsOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+          onClick={() => setIsSettingsOpen(false)}
+        >
+          <div onClick={(e) => e.stopPropagation()}>
+            <SettingsPanel
+              onClose={() => setIsSettingsOpen(false)}
+              autoFollow={autoFollow}
+              onAutoFollowChange={handleAutoFollowChange}
+              fragmentSpacing={fragmentSpacing}
+              onFragmentSpacingChange={handleFragmentSpacingChange}
+              onlyAudioChapters={onlyAudioChapters}
+              onOnlyAudioChaptersChange={handleOnlyAudioChaptersChange}
+            />
+          </div>
+        </div>
       )}
     </div>
   );
