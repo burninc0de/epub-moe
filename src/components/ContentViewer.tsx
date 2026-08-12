@@ -395,20 +395,25 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
           >
             {isBlockDisplay ? <AlignJustify className="w-4 h-4" /> : <Text className="w-4 h-4" />}
           </button>
-          <button
-            onClick={() => {
-              if (!isHtmlEditMode) setEditedHtml(chapter.content);
-              setIsHtmlEditMode((v) => !v);
-            }}
-            className={`p-1.5 rounded-md transition-colors ${
-              isHtmlEditMode
-                ? 'bg-yellow-600 text-white'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600'
-            }`}
-            title={isHtmlEditMode ? 'Exit HTML Edit Mode' : 'Edit HTML Source'}
-          >
-            <Code className="w-4 h-4" />
-          </button>
+          {isHtmlEditMode ? (
+            <span
+              className="p-1.5 rounded-md bg-yellow-600 text-white cursor-default"
+              title="HTML edit mode active - save or cancel to leave"
+            >
+              <Code className="w-4 h-4" />
+            </span>
+          ) : (
+            <button
+              onClick={() => {
+                setEditedHtml(chapter.content);
+                setIsHtmlEditMode(true);
+              }}
+              className="p-1.5 rounded-md transition-colors bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+              title="Edit HTML Source"
+            >
+              <Code className="w-4 h-4" />
+            </button>
+          )}
             {isHtmlEditMode && (
               <>
                 <button
@@ -421,7 +426,7 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
                   }}
                 >Save</button>
                 <button
-                  className="ml-1 px-3 py-1 bg-gray-400 text-white rounded hover:bg-gray-500"
+                  className="ml-1 px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
                   onClick={() => {
                     setIsHtmlEditMode(false);
                     setEditedHtml(null);

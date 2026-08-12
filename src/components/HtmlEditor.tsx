@@ -1,6 +1,6 @@
 import EditorModule from 'react-simple-code-editor';
 import Prism from 'prismjs';
-import 'prismjs/themes/prism.css';
+import 'prismjs/themes/prism-tomorrow.css';
 import 'prismjs/components/prism-markup';
 
 const Editor = (EditorModule as unknown as { default: typeof EditorModule }).default;
@@ -20,8 +20,6 @@ const HtmlEditor = ({ value, onValueChange }: HtmlEditorProps) => (
       fontFamily: 'Fira Mono, Menlo, Monaco, Consolas, monospace',
       fontSize: 14,
       minHeight: 300,
-      background: '#1a202c',
-      color: '#f8f8f2',
       borderRadius: 8,
       marginBottom: 16,
     }}
