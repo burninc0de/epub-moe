@@ -45,6 +45,7 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
   const [isCutToolSticky, setIsCutToolSticky] = useState<boolean>(false);
   const [cutPreviewPosition, setCutPreviewPosition] = useState<{ x: number; y: number; height: number } | null>(null);
   const [splitNotice, setSplitNotice] = useState<string | null>(null);
+  const [fontScale, setFontScale] = useState<number>(1);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -52,6 +53,21 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
     const timeout = window.setTimeout(() => setSplitNotice(null), 2200);
     return () => window.clearTimeout(timeout);
   }, [splitNotice]);
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      const step = e.deltaY > 0 ? -0.1 : 0.1;
+      setFontScale((prev) => Math.min(2.5, Math.max(0.5, prev + step)));
+    };
+
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    return () => container.removeEventListener('wheel', handleWheel);
+  }, [isHtmlEditMode]);
 
   useEffect(() => {
     if (!selectedFragment || !autoFollow) return;
@@ -383,26 +399,35 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
           >
             <Code className="w-4 h-4" />
           </button>
-          {isHtmlEditMode && (
-            <>
+            {isHtmlEditMode && (
+              <>
+                <button
+                  className="ml-2 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  onClick={() => {
+                    if (editedHtml && onHtmlUpdate) {
+                      onHtmlUpdate(editedHtml);
+                    }
+                    setIsHtmlEditMode(false);
+                  }}
+                >Save</button>
+                <button
+                  className="ml-1 px-3 py-1 bg-gray-400 text-white rounded hover:bg-gray-500"
+                  onClick={() => {
+                    setIsHtmlEditMode(false);
+                    setEditedHtml(null);
+                  }}
+                >Cancel</button>
+              </>
+            )}
+            {!isHtmlEditMode && (
               <button
-                className="ml-2 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
-                onClick={() => {
-                  if (editedHtml && onHtmlUpdate) {
-                    onHtmlUpdate(editedHtml);
-                  }
-                  setIsHtmlEditMode(false);
-                }}
-              >Save</button>
-              <button
-                className="ml-1 px-3 py-1 bg-gray-400 text-white rounded hover:bg-gray-500"
-                onClick={() => {
-                  setIsHtmlEditMode(false);
-                  setEditedHtml(null);
-                }}
-              >Cancel</button>
-            </>
-          )}
+                onClick={() => setFontScale(1)}
+                className="px-2 py-1 rounded-md text-xs font-medium bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+                title="Reset zoom (Ctrl+scroll to zoom text)"
+              >
+                {Math.round(fontScale * 100)}%
+              </button>
+            )}
         </div>
       </div>
 
@@ -434,6 +459,7 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
           <div className="relative">
             <div 
               className="prose max-w-none dark:prose-invert"
+              style={{ fontSize: `${fontScale}rem` }}
               onClick={handleContentClick}
               onMouseMove={handleContentMouseMove}
               onMouseLeave={() => setCutPreviewPosition(null)}
