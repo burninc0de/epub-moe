@@ -276,7 +276,7 @@ const App: React.FC = () => {
           <button
             onClick={handleExportEPUB}
             disabled={isLoadingExport}
-            className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 dark:bg-blue-800 dark:hover:bg-blue-700"
+            className="px-2 py-0.9 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 dark:bg-blue-800 dark:hover:bg-blue-700"
           >
             {isLoadingExport ? (
               <>
