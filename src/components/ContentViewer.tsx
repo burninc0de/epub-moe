@@ -349,7 +349,7 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
                 if (!isCutToolActive) setIsCutToolActive(true);
               }
             }}
-            className={`p-2 rounded-md transition-colors ${
+            className={`p-1.5 rounded-md transition-colors ${
               isCutToolSticky
                 ? 'bg-orange-600 text-white hover:bg-orange-700'
                 : isCutToolActive 
@@ -358,30 +358,30 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
             }`}
             title={isCutToolSticky ? 'Cut Tool (Sticky Mode) - Double-click to disable' : isCutToolActive ? 'Deactivate Cut Tool - Double-click for sticky mode' : 'Activate Cut Tool - Double-click for sticky mode'}
           >
-            <Scissors className="w-5 h-5" />
+            <Scissors className="w-4 h-4" />
           </button>
           <button 
             onClick={() => setIsBlockDisplay(!isBlockDisplay)}
-            className={`p-2 rounded-md transition-colors ${
+            className={`p-1.5 rounded-md transition-colors ${
               'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600'
             }`}
             title={isBlockDisplay ? 'Show fragments in flow text' : 'Show fragments as lines'}
           >
-            {isBlockDisplay ? <AlignJustify className="w-5 h-5" /> : <Text className="w-5 h-5" />}
+            {isBlockDisplay ? <AlignJustify className="w-4 h-4" /> : <Text className="w-4 h-4" />}
           </button>
           <button
             onClick={() => {
               if (!isHtmlEditMode) setEditedHtml(chapter.content);
               setIsHtmlEditMode((v) => !v);
             }}
-            className={`p-2 rounded-md transition-colors ${
+            className={`p-1.5 rounded-md transition-colors ${
               isHtmlEditMode
                 ? 'bg-yellow-600 text-white'
                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600'
             }`}
             title={isHtmlEditMode ? 'Exit HTML Edit Mode' : 'Edit HTML Source'}
           >
-            <Code className="w-5 h-5" />
+            <Code className="w-4 h-4" />
           </button>
           {isHtmlEditMode && (
             <>
