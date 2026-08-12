@@ -7,7 +7,7 @@ import { FragmentEditor } from './components/FragmentEditor';
 import { SettingsPanel } from './components/SettingsPanel';
 import { useEPUBEditor } from './hooks/useEPUBEditor';
 import { Resizer } from './components/Resizer';
-import { Upload, Loader2, PanelRightOpen, PanelRightClose, Feather, Settings } from 'lucide-react';
+import { Upload, Loader2, PanelRightOpen, PanelRightClose, PanelLeftOpen, PanelLeftClose, Feather, Settings } from 'lucide-react';
 
 declare const __AUTO_LOAD_EPUB__: string;
 
@@ -32,8 +32,10 @@ const App: React.FC = () => {
   const [isBlockDisplay, setIsBlockDisplay] = useState(true);
   const [isLoadingExport, setIsLoadingExport] = useState(false);
   const [isRightPanelCollapsed, setIsRightPanelCollapsed] = useState(false);
+  const [isLeftPanelCollapsed, setIsLeftPanelCollapsed] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const savedRightPanelWidth = useRef(rightPanelWidth);
+  const savedLeftPanelWidth = useRef(leftPanelWidth);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -232,6 +234,21 @@ const App: React.FC = () => {
             <Feather className="w-4 h-4 text-blue-600 dark:text-blue-400" />
           </div>
           <span className="font-semibold text-gray-900 dark:text-white">epub-moe</span>
+          <button
+            onClick={() => {
+              if (isLeftPanelCollapsed) {
+                setLeftPanelWidth(savedLeftPanelWidth.current);
+                setIsLeftPanelCollapsed(false);
+              } else {
+                savedLeftPanelWidth.current = leftPanelWidth;
+                setIsLeftPanelCollapsed(true);
+              }
+            }}
+            className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
+            title={isLeftPanelCollapsed ? 'Expand Chapter List' : 'Collapse Chapter List'}
+          >
+            {isLeftPanelCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+          </button>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -291,15 +308,19 @@ const App: React.FC = () => {
       {/* Top section: Three columns */}
       <div className="flex-1 flex min-h-0">
         {/* Left Column (ChapterList) */}
-        <div style={{ width: leftPanelWidth }} className="flex-shrink-0 h-full flex flex-col">
-          <ChapterList
-            chapters={epubData.chapters}
-            selectedChapter={selectedChapter}
-            onChapterSelect={setSelectedChapter}
-          />
-        </div>
-        
-        <Resizer onMouseDown={(e) => startResizing(e, 'horizontal', 'left')} />
+        {!isLeftPanelCollapsed && (
+          <>
+            <div style={{ width: leftPanelWidth }} className="flex-shrink-0 h-full flex flex-col">
+              <ChapterList
+                chapters={epubData.chapters}
+                selectedChapter={selectedChapter}
+                onChapterSelect={setSelectedChapter}
+              />
+            </div>
+
+            <Resizer onMouseDown={(e) => startResizing(e, 'horizontal', 'left')} />
+          </>
+        )}
 
         {/* Middle Column (ContentViewer or Settings) */}
         <div className="flex-1 flex flex-col min-w-0">
