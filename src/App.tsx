@@ -4,9 +4,10 @@ import { ChapterList } from './components/ChapterList';
 import { ContentViewer } from './components/ContentViewer';
 import { WaveformViewer, WaveformViewerHandles } from './components/WaveformViewer';
 import { FragmentEditor } from './components/FragmentEditor';
+import { SettingsPanel } from './components/SettingsPanel';
 import { useEPUBEditor } from './hooks/useEPUBEditor';
 import { Resizer } from './components/Resizer';
-import { Upload, Loader2, PanelRightOpen, PanelRightClose, Feather } from 'lucide-react';
+import { Upload, Loader2, PanelRightOpen, PanelRightClose, Feather, Settings } from 'lucide-react';
 
 declare const __AUTO_LOAD_EPUB__: string;
 
@@ -31,6 +32,7 @@ const App: React.FC = () => {
   const [isBlockDisplay, setIsBlockDisplay] = useState(true);
   const [isLoadingExport, setIsLoadingExport] = useState(false);
   const [isRightPanelCollapsed, setIsRightPanelCollapsed] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const savedRightPanelWidth = useRef(rightPanelWidth);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -241,6 +243,13 @@ const App: React.FC = () => {
             {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Upload size={18} />}
           </button>
           <button
+            onClick={() => setIsSettingsOpen((prev) => !prev)}
+            className={`p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors ${isSettingsOpen ? 'bg-gray-200 dark:bg-gray-700' : ''}`}
+            title="Settings"
+          >
+            <Settings size={18} />
+          </button>
+          <button
             onClick={handleExportEPUB}
             disabled={isLoadingExport}
             className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 dark:bg-blue-800 dark:hover:bg-blue-700"
@@ -292,10 +301,13 @@ const App: React.FC = () => {
         
         <Resizer onMouseDown={(e) => startResizing(e, 'horizontal', 'left')} />
 
-        {/* Middle Column (ContentViewer) */}
+        {/* Middle Column (ContentViewer or Settings) */}
         <div className="flex-1 flex flex-col min-w-0">
           <div className="flex-1 overflow-y-auto">
-            <ContentViewer
+            {isSettingsOpen ? (
+              <SettingsPanel onClose={() => setIsSettingsOpen(false)} />
+            ) : (
+              <ContentViewer
               chapter={currentChapter}
               fragments={fragments}
               selectedFragment={selectedFragment}
@@ -325,6 +337,7 @@ const App: React.FC = () => {
               isBlockDisplay={isBlockDisplay}
               setIsBlockDisplay={setIsBlockDisplay}
             />
+            )}
           </div>
         </div>
 
