@@ -6,8 +6,7 @@ Setup instructions are in the [README](README.md) — same as what you'd run to 
 
 A few pointers:
 
-- **Build, typecheck, and test** before committing — `npm run build`, `npx tsc -b`, `npm test`. Smoke tests need the fixture EPUB (see README's Testing section; tests skip with a message if it's absent).
-- Note: `npm run lint` is currently broken (ESLint 9 vs. pinned typescript-eslint). It fails at config load — don't try to fix it by editing source.
+- **Build, typecheck, lint, and test** before committing — `npm run build`, `npx tsc -b`, `npm run lint`, `npm test`. Smoke tests need the fixture EPUB (see README's Testing section; tests skip with a message if it's absent).
 - **Small functions**, one job each.
 - Keep commits descriptive, for example `feat: new hotkey`.
 

@@ -9,10 +9,10 @@ npm run dev      # Vite dev server on http://localhost:5173
 npm run build    # production build to dist/ (passes; typecheck is NOT run)
 npm run preview  # serve the production build
 npm test         # Playwright smoke tests against the production build (see below)
-npm run lint     # BROKEN - see below
+npm run lint     # ESLint - works; see notes below
 ```
 
-- **`npm run lint` fails** with `TypeError: ... '@typescript-eslint/no-unused-expressions': Cannot read properties of undefined (reading 'allowShortCircuit')` — ESLint 9.x is incompatible with the pinned typescript-eslint 8.3.0. Do not attempt to "fix" lint errors by editing source; it fails at config load. The real verification is `npm run build`.
+- **`npm run lint` works.** It needs `typescript-eslint` at a recent 8.x (bumped from ^8.3.0 to ^8.66.0) to be compatible with ESLint 9, and `package.json` scopes the `brace-expansion` override to `minimatch@3.1.5` (`^1.1.11`) so ESLint's config matcher doesn't get the incompatible v5.
 - **Playwright smoke tests** live in `e2e/smoke.spec.ts` and cover the basics: EPUB opens, waveform renders, HTML editor opens, EPUB exports. They run against `npm run preview` (production build) via `playwright.config.ts` — build before testing if you changed code. **The fixture `dld9_tb_preview.epub` is gitignored**; tests `skip` with a clear message if it's absent. Drop a talking-book EPUB at the project root with that filename to run them.
 - **No typecheck script.** `tsc --noEmit` is enabled via `tsconfig.app.json` (strict, `noUnusedLocals`, `noUnusedParameters`), but nothing invokes it. To typecheck manually: `npx tsc -b`.
 
@@ -43,4 +43,4 @@ npm run lint     # BROKEN - see below
 
 ## Docs
 
-- `readme.md` and `CONTRIBUTING.md` contain the product/usage philosophy (personal tool, writer-maintained, PRs welcome but slow). `CONTRIBUTING.md` says to run `npm run lint` before PRs — know it's currently broken.
+- `readme.md` and `CONTRIBUTING.md` contain the product/usage philosophy (personal tool, writer-maintained, PRs welcome but slow). `CONTRIBUTING.md` says to run `npm run lint` before PRs — it now works.

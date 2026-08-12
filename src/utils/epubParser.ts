@@ -1,6 +1,6 @@
 import JSZip from 'jszip';
 import { parseString } from 'xml2js';
-import { EPUBData, EPUBChapter, SMILFragment, AudioFile } from '../types/epub';
+import { EPUBData, EPUBChapter, SMILFragment, AudioFile, ContainerXML, OPFPackage, SMILPar, SMILFile } from '../types/epub';
 
 const XHTML_MEDIA_TYPE = 'application/xhtml+xml';
 const SMIL_MEDIA_TYPE = 'application/smil+xml';
@@ -22,9 +22,9 @@ export const resolvePath = (from: string, to: string): string => {
 
 export class EPUBParser {
   private zip: JSZip;
-  private containerXml: any;
+  private containerXml!: ContainerXML;
   private opfPath: string = '';
-  private opfData: any;
+  private opfData!: OPFPackage;
   private basePath: string | null = null;
 
   constructor(zip: JSZip) {
@@ -52,7 +52,7 @@ export class EPUBParser {
     if (!containerFile) throw new Error('Invalid EPUB: Missing container.xml');
     
     const containerContent = await containerFile.async('text');
-    this.containerXml = await this.parseXML(containerContent);
+    this.containerXml = await this.parseXML<ContainerXML>(containerContent);
     this.opfPath = this.containerXml.container.rootfiles[0].rootfile[0].$['full-path'];
   }
 
@@ -61,7 +61,7 @@ export class EPUBParser {
     if (!opfFile) throw new Error('Invalid EPUB: Missing OPF file');
     
     const opfContent = await opfFile.async('text');
-    this.opfData = await this.parseXML(opfContent);
+    this.opfData = await this.parseXML<OPFPackage>(opfContent);
   }
 
   private async parseChapters(): Promise<EPUBChapter[]> {
@@ -71,7 +71,7 @@ export class EPUBParser {
     
     for (const spineItem of spine) {
       const idref = spineItem.$.idref;
-      const manifestItem = manifest.find((item: any) => item.$.id === idref);
+      const manifestItem = manifest.find(item => item.$.id === idref);
       
       if (manifestItem && manifestItem.$['media-type'] === XHTML_MEDIA_TYPE) {
         const chapterPath = this.calculateBasePath() + manifestItem.$.href;
@@ -114,10 +114,10 @@ export class EPUBParser {
   }
 
   private async parseSMILContent(content: string, smilId: string): Promise<SMILFragment[]> {
-    const smilData = await this.parseXML(content);
+    const smilData = await this.parseXML<SMILFile>(content);
     const fragments: SMILFragment[] = [];
     
-    let pars: any[] = [];
+    let pars: SMILPar[] = [];
     if (smilData.smil?.body?.[0]?.seq) {
         for (const seq of smilData.smil.body[0].seq) {
             if (seq.par) {
@@ -128,7 +128,7 @@ export class EPUBParser {
         pars = smilData.smil.body[0].par;
     }
     
-    pars.forEach((par: any, index: number) => {
+    pars.forEach((par, index) => {
       const text = par.text?.[0];
       const audio = par.audio?.[0];
       
@@ -210,7 +210,7 @@ export class EPUBParser {
     return this.calculateBasePath();
   }
 
-  private parseXML(content: string): Promise<any> {
+  private parseXML<T>(content: string): Promise<T> {
     return new Promise((resolve, reject) => {
       parseString(content, (err, result) => {
         if (err) reject(err);
@@ -220,18 +220,19 @@ export class EPUBParser {
   }
 
   // Helper method to extract string content from xml2js parsed objects
-  private extractStringFromXMLJS(xmlObj: any): string {
+  private extractStringFromXMLJS(xmlObj: unknown): string {
     if (typeof xmlObj === 'string') {
       return xmlObj;
     }
     if (xmlObj && typeof xmlObj === 'object') {
+      const obj = xmlObj as { _?: string; toString?: () => string };
       // xml2js creates objects with _ property for text content
-      if (xmlObj._ !== undefined) {
-        return String(xmlObj._);
+      if (obj._ !== undefined) {
+        return String(obj._);
       }
       // If it's an object but no _ property, try to convert to string
-      if (xmlObj.toString && typeof xmlObj.toString === 'function') {
-        return xmlObj.toString();
+      if (obj.toString && typeof obj.toString === 'function') {
+        return obj.toString();
       }
     }
     return '';

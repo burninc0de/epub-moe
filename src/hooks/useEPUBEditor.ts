@@ -3,7 +3,7 @@ import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { EPUBParser } from '../utils/epubParser';
 import { buildSMIL, calculateTotalDuration, updateOPFWithDuration } from '../utils/smilBuilder';
-import { EPUBData, EPUBChapter, SMILFragment } from '../types/epub';
+import { EPUBData, EPUBChapter, SMILFragment, ContainerXML, OPFManifestItem } from '../types/epub';
 
 const LAST_CHAPTER_KEY = 'nuTobi:lastSelectedChapter';
 const MIN_FRAGMENT_DURATION = 0.01;
@@ -553,9 +553,9 @@ export const useEPUBEditor = () => {
     const { smilId, fragments } = chapterData;
     const audioSrc = fragments[0].audioSrc;
     // Find the SMIL file path from the manifest
-    const smilItem = Array.from(epubData.manifest.package.manifest[0].item).find(
-      (item: any) => item.$ && item.$.id === smilId
-    ) as any;
+    const smilItem = epubData.manifest.package.manifest[0].item.find(
+      (item: OPFManifestItem) => item.$ && item.$.id === smilId
+    );
     const smilPath = (smilItem && smilItem.$) ? smilItem.$.href : '';
 
     // The audioSrc might be relative to the SMIL file, so we need to resolve it
@@ -591,7 +591,7 @@ export const useEPUBEditor = () => {
     // Update SMIL files, filtering out orphaned fragments
     for (const [id, fragments] of epubData.smilFiles.entries()) {
       const chapter = epubData.chapters.find(c => c.mediaOverlay === id);
-      const manifestItem = epubData.manifest.package.manifest[0].item.find((item: any) => item.$.id === id);
+      const manifestItem = epubData.manifest.package.manifest[0].item.find((item: OPFManifestItem) => item.$.id === id);
 
       if (chapter && manifestItem) {
         const smilPath = basePath + manifestItem.$.href;
@@ -633,8 +633,8 @@ export const useEPUBEditor = () => {
       const containerContent = await containerFile.async('text');
       const parseString = (await import('xml2js')).parseString;
       
-      const containerXml = await new Promise<any>((resolve, reject) => {
-        parseString(containerContent, (err: any, result: any) => {
+      const containerXml = await new Promise<ContainerXML>((resolve, reject) => {
+        parseString(containerContent, (err: Error | null, result: ContainerXML) => {
           if (err) reject(err);
           else resolve(result);
         });

@@ -63,6 +63,10 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
   });
   const lastVolumeRef = useRef<number>(DEFAULT_VOLUME);
   const audioUrlRef = useRef<string | null>(null);
+  const zoomLevelRef = useRef(zoomLevel);
+  useEffect(() => {
+    zoomLevelRef.current = zoomLevel;
+  }, [zoomLevel]);
 
   // Refs to hold the latest callbacks
   const onFragmentSelectRef = useRef(onFragmentSelect);
@@ -160,7 +164,7 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
 
     const audioUrl = URL.createObjectURL(audioBlob);
     audioUrlRef.current = audioUrl;
-    ws.load(audioUrl).catch((err: any) => {
+    ws.load(audioUrl).catch((err: Error) => {
       // Suppress AbortError, log others
       if (err?.name !== 'AbortError') {
         // Optionally log or handle other errors
@@ -242,7 +246,7 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
     });
 
     // Track drag state using region-update event
-    let dragStartPositions: { [key: string]: { start: number, end: number } } = {};
+    const dragStartPositions: { [key: string]: { start: number, end: number } } = {};
     let dragUpdateScheduled = false;
     regionsPluginRef.current.on('region-update', (region) => {
       if (!dragStartPositions[region.id]) {
@@ -350,7 +354,6 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
     const container = waveformRef.current;
     if (!container) return;
 
-    let zoomLevelRef = zoomLevel; // Keep a ref for immediate updates
     const ZOOM_SENSITIVITY = 0.08; // Even more responsive
     let lastStateUpdate = 0;
     const STATE_UPDATE_THROTTLE = 16; // Update React state at ~60fps
@@ -366,7 +369,7 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
 
       // Calculate new zoom level immediately
       const zoomDelta = -e.deltaY * ZOOM_SENSITIVITY;
-      zoomLevelRef = Math.max(MIN_ZOOM, Math.min(zoomLevelRef + zoomDelta, MAX_ZOOM));
+      zoomLevelRef.current = Math.max(MIN_ZOOM, Math.min(zoomLevelRef.current + zoomDelta, MAX_ZOOM));
 
       // Update WaveSurfer zoom with smart throttling - more frequent during rapid scrolling
       const timeSinceLastZoom = now - lastZoomUpdate;
@@ -374,13 +377,13 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
                            (timeSinceLastZoom > 16 && Math.abs(zoomDelta) > 1); // Faster for large changes
 
       if (shouldUpdate) {
-        wavesurfer.current?.zoom(zoomLevelRef);
+        wavesurfer.current?.zoom(zoomLevelRef.current);
         lastZoomUpdate = now;
       }
 
       // Throttle React state updates to prevent excessive re-renders
       if (now - lastStateUpdate > STATE_UPDATE_THROTTLE) {
-        setZoomLevel(zoomLevelRef);
+        setZoomLevel(zoomLevelRef.current);
         lastStateUpdate = now;
       }
     };
@@ -507,10 +510,10 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
       }
     }
     if (foundFragment) {
-      onFragmentSelect(foundFragment);
+      onFragmentSelectRef.current(foundFragment);
       highlightFragmentRegion(foundFragment);
     } else {
-      onFragmentSelect(null);
+      onFragmentSelectRef.current(null);
       highlightFragmentRegion(null);
     }
   }, [currentTime, fragments]);
