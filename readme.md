@@ -43,7 +43,9 @@ Epub-moe has been tested with "TalkingBooks" that Storyteller Version 1.3.6 gene
 
 
 > [!IMPORTANT]
-> For the audio timing to be perfect, it is recommended to use constant bit rate MP3s. When using MP3s with variable bit rate, there is a drift over time due to how web audio libraries handle VBR files - the waveform display becomes increasingly inaccurate as you move further into the audio.
+> For the audio timing to be perfect, it is recommended to use constant bit rate MP3s. When using MP3s with variable bit rate, there is a drift over time due to how web audio libraries handle VBR files.
+>
+> Personally I'd skip MP3 altogether and use a modern container like MP4 with OPUS codec instead — better quality at the same bitrate and smaller files. Caveat: may not work on some older hardware.
 
 ## Installation & Setup
 
@@ -58,7 +60,7 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 ### Auto-loading an EPUB during development
 
-To skip the upload screen each time the dev server reloads, place your EPUB in the `public/` directory and set the `VITE_AUTO_LOAD_EPUB` environment variable:
+To skip the upload screen each time the dev server reloads, drop your EPUB at the project root (or in `public/`) and set the `VITE_AUTO_LOAD_EPUB` environment variable. Vite serves project-root files in dev, so it works without moving the file into `public/`:
 
 ```bash
 VITE_AUTO_LOAD_EPUB=/dld9_tb_preview.epub npm run dev
@@ -69,6 +71,8 @@ Or add it to a `.env.development.local` file:
 ```
 VITE_AUTO_LOAD_EPUB=/dld9_tb_preview.epub
 ```
+
+Note: only files in `public/` are copied into the production build, so root-level EPUBs are a dev-only convenience.
 
 ## Testing
 
