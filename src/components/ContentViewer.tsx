@@ -8,6 +8,10 @@ import Prism from 'prismjs';
 import 'prismjs/themes/prism.css';
 import 'prismjs/components/prism-markup';
 
+const FONT_SCALE_KEY = 'fontScale';
+const MIN_FONT_SCALE = 0.5;
+const MAX_FONT_SCALE = 2.5;
+
 const Editor = (EditorModule as unknown as { default: typeof EditorModule }).default;
 
 interface ContentViewerProps {
@@ -45,7 +49,11 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
   const [isCutToolSticky, setIsCutToolSticky] = useState<boolean>(false);
   const [cutPreviewPosition, setCutPreviewPosition] = useState<{ x: number; y: number; height: number } | null>(null);
   const [splitNotice, setSplitNotice] = useState<string | null>(null);
-  const [fontScale, setFontScale] = useState<number>(1);
+  const [fontScale, setFontScale] = useState<number>(() => {
+    const stored = parseFloat(localStorage.getItem(FONT_SCALE_KEY) ?? '');
+    if (!Number.isFinite(stored)) return 1;
+    return Math.min(MAX_FONT_SCALE, Math.max(MIN_FONT_SCALE, stored));
+  });
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -62,7 +70,11 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
       if (!e.ctrlKey && !e.metaKey) return;
       e.preventDefault();
       const step = e.deltaY > 0 ? -0.1 : 0.1;
-      setFontScale((prev) => Math.min(2.5, Math.max(0.5, prev + step)));
+      setFontScale((prev) => {
+        const next = Math.min(MAX_FONT_SCALE, Math.max(MIN_FONT_SCALE, prev + step));
+        localStorage.setItem(FONT_SCALE_KEY, String(next));
+        return next;
+      });
     };
 
     container.addEventListener('wheel', handleWheel, { passive: false });
@@ -421,7 +433,10 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
             )}
             {!isHtmlEditMode && (
               <button
-                onClick={() => setFontScale(1)}
+                onClick={() => {
+                  localStorage.setItem(FONT_SCALE_KEY, '1');
+                  setFontScale(1);
+                }}
                 className="px-2 py-1 rounded-md text-xs font-medium bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
                 title="Reset zoom (Ctrl+scroll to zoom text)"
               >

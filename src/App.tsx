@@ -13,6 +13,8 @@ declare const __AUTO_LOAD_EPUB__: string;
 
 const WAVEFORM_HEIGHT_KEY = 'waveformHeight';
 const AUTO_FOLLOW_KEY = 'autoFollow';
+const LEFT_PANEL_COLLAPSED_KEY = 'leftPanelCollapsed';
+const RIGHT_PANEL_COLLAPSED_KEY = 'rightPanelCollapsed';
 const MIN_WAVEFORM_HEIGHT = 192;
 const MIN_TOP_SECTION_HEIGHT = 100;
 const RESIZER_HEIGHT = 8;
@@ -32,8 +34,8 @@ const App: React.FC = () => {
   const [isHtmlEditMode, setIsHtmlEditMode] = useState(false);
   const [isBlockDisplay, setIsBlockDisplay] = useState(true);
   const [isLoadingExport, setIsLoadingExport] = useState(false);
-  const [isRightPanelCollapsed, setIsRightPanelCollapsed] = useState(false);
-  const [isLeftPanelCollapsed, setIsLeftPanelCollapsed] = useState(false);
+  const [isRightPanelCollapsed, setIsRightPanelCollapsed] = useState(() => localStorage.getItem(RIGHT_PANEL_COLLAPSED_KEY) === 'true');
+  const [isLeftPanelCollapsed, setIsLeftPanelCollapsed] = useState(() => localStorage.getItem(LEFT_PANEL_COLLAPSED_KEY) === 'true');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [autoFollow, setAutoFollow] = useState(() => localStorage.getItem(AUTO_FOLLOW_KEY) !== 'false');
   const savedRightPanelWidth = useRef(rightPanelWidth);
@@ -246,9 +248,11 @@ const App: React.FC = () => {
               if (isLeftPanelCollapsed) {
                 setLeftPanelWidth(savedLeftPanelWidth.current);
                 setIsLeftPanelCollapsed(false);
+                localStorage.setItem(LEFT_PANEL_COLLAPSED_KEY, 'false');
               } else {
                 savedLeftPanelWidth.current = leftPanelWidth;
                 setIsLeftPanelCollapsed(true);
+                localStorage.setItem(LEFT_PANEL_COLLAPSED_KEY, 'true');
               }
             }}
             className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
@@ -299,9 +303,11 @@ const App: React.FC = () => {
               if (isRightPanelCollapsed) {
                 setRightPanelWidth(savedRightPanelWidth.current);
                 setIsRightPanelCollapsed(false);
+                localStorage.setItem(RIGHT_PANEL_COLLAPSED_KEY, 'false');
               } else {
                 savedRightPanelWidth.current = rightPanelWidth;
                 setIsRightPanelCollapsed(true);
+                localStorage.setItem(RIGHT_PANEL_COLLAPSED_KEY, 'true');
               }
             }}
             className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
