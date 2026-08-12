@@ -51,6 +51,29 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
     return Math.min(MAX_FONT_SCALE, Math.max(MIN_FONT_SCALE, stored));
   });
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [isEditingZoom, setIsEditingZoom] = useState(false);
+  const [zoomInput, setZoomInput] = useState('');
+
+  const commitZoom = (raw: string) => {
+    const value = parseFloat(raw);
+    if (Number.isFinite(value)) {
+      const next = Math.min(MAX_FONT_SCALE, Math.max(MIN_FONT_SCALE, value / 100));
+      setFontScale(next);
+      localStorage.setItem(FONT_SCALE_KEY, String(next));
+    }
+    setIsEditingZoom(false);
+  };
+
+  useEffect(() => {
+    const value = parseFloat(zoomInput);
+    if (!Number.isFinite(value)) return;
+    const timeout = window.setTimeout(() => {
+      const next = Math.min(MAX_FONT_SCALE, Math.max(MIN_FONT_SCALE, value / 100));
+      setFontScale(next);
+      localStorage.setItem(FONT_SCALE_KEY, String(next));
+    }, 300);
+    return () => window.clearTimeout(timeout);
+  }, [zoomInput]);
 
   useEffect(() => {
     if (!splitNotice) return;
@@ -435,16 +458,39 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
               </>
             )}
             {!isHtmlEditMode && (
-              <button
-                onClick={() => {
-                  localStorage.setItem(FONT_SCALE_KEY, '1');
-                  setFontScale(1);
-                }}
-                className="px-2 py-1 rounded-md text-xs font-medium bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
-                title="Reset zoom (Ctrl+scroll to zoom text)"
-              >
-                {Math.round(fontScale * 100)}%
-              </button>
+              isEditingZoom ? (
+                <input
+                  autoFocus
+                  type="number"
+                  min={MIN_FONT_SCALE * 100}
+                  max={MAX_FONT_SCALE * 100}
+                  value={zoomInput}
+                  onChange={(e) => setZoomInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') commitZoom(zoomInput);
+                    if (e.key === 'Escape') setIsEditingZoom(false);
+                  }}
+                  onBlur={() => commitZoom(zoomInput)}
+                  className="w-12 text-center py-1.5 rounded-md text-xs font-medium bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  title="Zoom (Ctrl+scroll to zoom text)"
+                />
+              ) : (
+                <button
+                  onClick={() => {
+                    localStorage.setItem(FONT_SCALE_KEY, '1');
+                    setFontScale(1);
+                  }}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    setZoomInput(String(Math.round(fontScale * 100)));
+                    setIsEditingZoom(true);
+                  }}
+                  className="w-12 text-center px-2 py-1.5 rounded-md text-xs font-medium bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+                  title="Click to reset zoom, right-click to set a custom value (Ctrl+scroll to zoom text)"
+                >
+                  {Math.round(fontScale * 100)}%
+                </button>
+              )
             )}
         </div>
       </div>
