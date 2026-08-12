@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback, forwardRef, useImperativeHandle } from 'react';
 import WaveSurfer from 'wavesurfer.js';
 import RegionsPlugin from 'wavesurfer.js/dist/plugins/regions.js';
-import { Play, Pause, Square, ZoomIn, ZoomOut, RotateCcw, Clock, Magnet, AlertTriangle } from 'lucide-react';
+import { Play, Pause, Square, ZoomIn, ZoomOut, RotateCcw, Clock, Magnet, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { SMILFragment } from '../types/epub';
 import { formatTime, parseTimeInput } from '../utils/time';
 
@@ -532,10 +532,10 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
           {/* Next/Previous Fragment Buttons */}
           <div className="flex items-center gap-2">
             <button onClick={handlePrevFragment} className="p-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600" title="Previous Fragment" disabled={selectedFragmentIndex <= 0}>
-              &#8592; Prev
+              <ChevronLeft className="w-4 h-4" />
             </button>
             <button onClick={handleNextFragment} className="p-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600" title="Next Fragment" disabled={selectedFragmentIndex === -1 || selectedFragmentIndex >= fragments.length - 1}>
-              Next &#8594;
+              <ChevronRight className="w-4 h-4" />
             </button>
           </div>
           <span className="text-sm text-gray-600 dark:text-gray-300">
