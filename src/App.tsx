@@ -8,6 +8,8 @@ import { useEPUBEditor } from './hooks/useEPUBEditor';
 import { Resizer } from './components/Resizer';
 import { Upload, Loader2 } from 'lucide-react';
 
+declare const __AUTO_LOAD_EPUB__: string;
+
 const WAVEFORM_HEIGHT_KEY = 'waveformHeight';
 const MIN_WAVEFORM_HEIGHT = 192;
 const MIN_TOP_SECTION_HEIGHT = 100;
@@ -27,7 +29,7 @@ const App: React.FC = () => {
   const [isCutToolActive, setIsCutToolActive] = useState(false);
   const [isHtmlEditMode, setIsHtmlEditMode] = useState(false);
   const [isBlockDisplay, setIsBlockDisplay] = useState(true);
-  const [isLoadingExport, setIsLoadingExport] = useState(false); // Export loading state
+  const [isLoadingExport, setIsLoadingExport] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -149,6 +151,30 @@ const App: React.FC = () => {
       setIsLoadingExport(false);
     }
   }, [exportEPUB]);
+
+  useEffect(() => {
+    const path = __AUTO_LOAD_EPUB__;
+    if (!path || epubData) return;
+
+    const controller = new AbortController();
+
+    (async () => {
+      try {
+        const res = await fetch(path, { signal: controller.signal });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const blob = await res.blob();
+        const filename = path.split('/').pop() || 'auto.epub';
+        const file = new File([blob], filename, { type: 'application/epub+zip' });
+        loadEPUB(file);
+      } catch (err: unknown) {
+        if (err instanceof DOMException && err.name === 'AbortError') return;
+        console.error('Auto-load failed:', err);
+      }
+    })();
+
+    return () => controller.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (error) {
     return (

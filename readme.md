@@ -56,6 +56,20 @@ npm run dev
 
 Open [http://localhost:5173](http://localhost:5173) in your browser.
 
+### Auto-loading an EPUB during development
+
+To skip the upload screen each time the dev server reloads, place your EPUB in the `public/` directory and set the `VITE_AUTO_LOAD_EPUB` environment variable:
+
+```bash
+VITE_AUTO_LOAD_EPUB=/dld9_tb_preview.epub npm run dev
+```
+
+Or add it to a `.env.development.local` file:
+
+```
+VITE_AUTO_LOAD_EPUB=/dld9_tb_preview.epub
+```
+
 ## Testing
 
 Smoke tests use [Playwright](https://playwright.dev/) against the production build and cover the basics: EPUB opens, waveform renders, HTML editor opens, and EPUB exports.

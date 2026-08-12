@@ -14,5 +14,6 @@ export default defineConfig({
   },
   define: {
     global: 'window',
+    __AUTO_LOAD_EPUB__: JSON.stringify(process.env.VITE_AUTO_LOAD_EPUB || ''),
   },
 });
