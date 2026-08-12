@@ -76,20 +76,19 @@ Note: only files in `public/` are copied into the production build, so root-leve
 
 ## Testing
 
-Smoke tests use [Playwright](https://playwright.dev/) against the production build and cover the basics: EPUB opens, waveform renders, HTML editor opens, and EPUB exports.
+`npm test` runs the full gate: lint, production build, then Playwright smoke tests (which cover EPUB opens, waveform renders, HTML editor opens, and EPUB exports).
 
 ```bash
 npm test
 ```
 
-They need a test fixture EPUB at the project root. Download the public single-chapter preview (from the preview portal at [books.learnoutlive.com](https://books.learnoutlive.com)):
+The tests need a test fixture EPUB at the project root, the public single-chapter preview (from the preview portal at [books.learnoutlive.com](https://books.learnoutlive.com)). If it's missing, `npm test` downloads it automatically from `https://preview.learnoutlive.com/epubs/dld9_tb_preview.epub` (override with the `EPUB_FIXTURE_URL` env var). If the download fails, the tests skip with a clear message. The fixture is gitignored, so anyone cloning the repo gets it downloaded on the first `npm test`.
+
+To run just the smoke tests (skip lint/build, but still ensure the fixture):
 
 ```bash
-curl -O https://preview.learnoutlive.com/epubs/dld9_tb_preview.epub
-npm test
+npm run test:playwright
 ```
-
-If the fixture is missing, the tests skip with a clear message. The fixture is gitignored, so anyone cloning the repo needs to download it once.
 
 ## Usage
 

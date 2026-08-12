@@ -6,7 +6,7 @@ Setup instructions are in the [README](README.md) — same as what you'd run to 
 
 A few pointers:
 
-- **Build, typecheck, lint, and test** before committing — `npm run build`, `npx tsc -b`, `npm run lint`, `npm test`. Smoke tests need the fixture EPUB (see README's Testing section; tests skip with a message if it's absent).
+- **Run `npm test`** before committing — it's the full gate (lint, build, fixture check/download, Playwright smoke tests). Also run `npx tsc -b` to typecheck, which the gate doesn't invoke. See README's Testing section for details.
 - **Small functions**, one job each.
 - Keep commits descriptive, for example `feat: new hotkey`.
 

@@ -8,12 +8,13 @@ React + TypeScript + Vite + Tailwind SPA for fine-tuning synchronized text/audio
 npm run dev      # Vite dev server on http://localhost:5173
 npm run build    # production build to dist/ (passes; typecheck is NOT run)
 npm run preview  # serve the production build
-npm test         # Playwright smoke tests against the production build (see below)
+npm test         # full gate: lint → build → fixture check/download → Playwright smoke tests
 npm run lint     # ESLint - works; see notes below
 ```
 
+- **`npm test` runs the full gate** (`lint`, `build`, `test:fixture`, `test:playwright`). The fixture EPUB is auto-downloaded on the fly, so you don't need to fetch it manually. Use `npm run test:playwright` to run just the smoke tests.
 - **`npm run lint` works.** It needs `typescript-eslint` at a recent 8.x (bumped from ^8.3.0 to ^8.66.0) to be compatible with ESLint 9, and `package.json` scopes the `brace-expansion` override to `minimatch@3.1.5` (`^1.1.11`) so ESLint's config matcher doesn't get the incompatible v5.
-- **Playwright smoke tests** live in `e2e/smoke.spec.ts` and cover the basics: EPUB opens, waveform renders, HTML editor opens, EPUB exports. They run against `npm run preview` (production build) via `playwright.config.ts` — build before testing if you changed code. **The fixture `dld9_tb_preview.epub` is gitignored**; tests `skip` with a clear message if it's absent. Drop a talking-book EPUB at the project root with that filename to run them.
+- **Playwright smoke tests** live in `e2e/smoke.spec.ts` and cover the basics: EPUB opens, waveform renders, HTML editor opens, EPUB exports. They run against `npm run preview` (production build) via `playwright.config.ts` — build before testing if you changed code.
 - **No typecheck script.** `tsc --noEmit` is enabled via `tsconfig.app.json` (strict, `noUnusedLocals`, `noUnusedParameters`), but nothing invokes it. To typecheck manually: `npx tsc -b`.
 
 ## Architecture
@@ -21,7 +22,7 @@ npm run lint     # ESLint - works; see notes below
 - `src/hooks/useEPUBEditor.ts` (773 lines) is the central controller: all EPUB state, all fragment operations (update/delete/split/add/offset/force-align), and `exportEPUB`.
 - `src/utils/epubParser.ts` — `EPUBParser` class parses `META-INF/container.xml` → OPF → spine chapters / SMIL fragments / audio blobs into `EPUBData`. Handles nested-directory EPUBs via `calculateBasePath`/`resolvePath`; use these helpers for path math rather than string joins.
 - `src/utils/smilBuilder.ts` — `buildSMIL()` regenerates SMIL XML on export.
-- `src/types/epub.ts` — `EPUBData`, `SMILFragment`, `AudioFile`. Note `EPUBData.manifest` and most parser outputs are typed `any` (raw xml2js trees) — that loose typing is intentional; keep it when extending.
+- `src/types/epub.ts` — `EPUBData`, `SMILFragment`, `AudioFile`, plus structured xml2js tree types (`OPFPackage`, `ContainerXML`, `SMILFile`, `SMILPar`, `OPFManifestItem`).
 - `src/App.tsx` composes the 4-panel layout: `ChapterList` (left) / `ContentViewer` (center) / `FragmentEditor` (right) / `WaveformViewer` (bottom, shown only when audio exists).
 
 ## Gotchas

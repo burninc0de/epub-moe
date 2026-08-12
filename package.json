@@ -27,7 +27,9 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "playwright test"
+    "test": "npm run lint && npm run build && npm run test:fixture && npm run test:playwright",
+    "test:fixture": "node scripts/ensure-fixture.mjs",
+    "test:playwright": "playwright test"
   },
   "dependencies": {
     "@types/jszip": "^3.4.1",
