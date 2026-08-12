@@ -7,12 +7,14 @@ import { FragmentEditor } from './components/FragmentEditor';
 import { SettingsPanel } from './components/SettingsPanel';
 import { useEPUBEditor } from './hooks/useEPUBEditor';
 import { Resizer } from './components/Resizer';
+import { FragmentSpacing, isValidFragmentSpacing } from './types/epub';
 import { Upload, Loader2, PanelRightOpen, PanelRightClose, PanelLeftOpen, PanelLeftClose, Feather, Settings } from 'lucide-react';
 
 declare const __AUTO_LOAD_EPUB__: string;
 
 const WAVEFORM_HEIGHT_KEY = 'waveformHeight';
 const AUTO_FOLLOW_KEY = 'autoFollow';
+const FRAGMENT_SPACING_KEY = 'fragmentSpacing';
 const LEFT_PANEL_COLLAPSED_KEY = 'leftPanelCollapsed';
 const RIGHT_PANEL_COLLAPSED_KEY = 'rightPanelCollapsed';
 const MIN_WAVEFORM_HEIGHT = 192;
@@ -38,6 +40,10 @@ const App: React.FC = () => {
   const [isLeftPanelCollapsed, setIsLeftPanelCollapsed] = useState(() => localStorage.getItem(LEFT_PANEL_COLLAPSED_KEY) === 'true');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [autoFollow, setAutoFollow] = useState(() => localStorage.getItem(AUTO_FOLLOW_KEY) !== 'false');
+  const [fragmentSpacing, setFragmentSpacing] = useState<FragmentSpacing>(() => {
+    const stored = localStorage.getItem(FRAGMENT_SPACING_KEY);
+    return isValidFragmentSpacing(stored) ? stored : 'default';
+  });
   const savedRightPanelWidth = useRef(rightPanelWidth);
   const savedLeftPanelWidth = useRef(leftPanelWidth);
 
@@ -165,6 +171,11 @@ const App: React.FC = () => {
   const handleAutoFollowChange = useCallback((value: boolean) => {
     setAutoFollow(value);
     localStorage.setItem(AUTO_FOLLOW_KEY, String(value));
+  }, []);
+
+  const handleFragmentSpacingChange = useCallback((value: FragmentSpacing) => {
+    setFragmentSpacing(value);
+    localStorage.setItem(FRAGMENT_SPACING_KEY, value);
   }, []);
 
   useEffect(() => {
@@ -343,6 +354,8 @@ const App: React.FC = () => {
                 onClose={() => setIsSettingsOpen(false)}
                 autoFollow={autoFollow}
                 onAutoFollowChange={handleAutoFollowChange}
+                fragmentSpacing={fragmentSpacing}
+                onFragmentSpacingChange={handleFragmentSpacingChange}
               />
             ) : (
               <ContentViewer
@@ -375,6 +388,7 @@ const App: React.FC = () => {
               isBlockDisplay={isBlockDisplay}
               setIsBlockDisplay={setIsBlockDisplay}
               autoFollow={autoFollow}
+              fragmentSpacing={fragmentSpacing}
             />
             )}
           </div>

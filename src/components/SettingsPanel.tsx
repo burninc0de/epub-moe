@@ -1,14 +1,23 @@
 import React from 'react';
 import { Settings, Github, X } from 'lucide-react';
 import { version } from '../../package.json';
+import { FragmentSpacing, FRAGMENT_SPACING_OPTIONS } from '../types/epub';
 
 interface SettingsPanelProps {
   onClose: () => void;
   autoFollow: boolean;
   onAutoFollowChange: (value: boolean) => void;
+  fragmentSpacing: FragmentSpacing;
+  onFragmentSpacingChange: (value: FragmentSpacing) => void;
 }
 
-export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, autoFollow, onAutoFollowChange }) => {
+export const SettingsPanel: React.FC<SettingsPanelProps> = ({
+  onClose,
+  autoFollow,
+  onAutoFollowChange,
+  fragmentSpacing,
+  onFragmentSpacingChange,
+}) => {
   return (
     <div className="h-full flex flex-col bg-white dark:bg-gray-900">
       <div className="flex items-center justify-between px-6 pt-6 pb-2">
@@ -49,6 +58,30 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, autoFollo
                 }`}
               />
             </button>
+          </div>
+
+          <div>
+            <h3 className="font-medium text-gray-900 dark:text-white">Fragment spacing</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+              Vertical spacing between fragments in the text viewer.
+            </p>
+            <div className="inline-flex rounded-md overflow-hidden border border-gray-300 dark:border-gray-600">
+              {FRAGMENT_SPACING_OPTIONS.map((option, index) => (
+                <button
+                  key={option.value}
+                  onClick={() => onFragmentSpacingChange(option.value)}
+                  className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                    index > 0 ? 'border-l border-gray-300 dark:border-gray-600' : ''
+                  } ${
+                    fragmentSpacing === option.value
+                      ? 'bg-blue-600 text-white dark:bg-blue-800'
+                      : 'bg-white text-gray-700 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>

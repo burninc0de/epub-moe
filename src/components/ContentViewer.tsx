@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import './ContentViewer.css';
 import { Scissors, AlignJustify, Text, Code } from 'lucide-react';
-import { EPUBChapter, SMILFragment } from '../types/epub';
+import { EPUBChapter, SMILFragment, FragmentSpacing, FRAGMENT_SPACING_CLASSES } from '../types/epub';
 
 import EditorModule from 'react-simple-code-editor';
 import Prism from 'prismjs';
@@ -28,6 +28,7 @@ interface ContentViewerProps {
   isBlockDisplay: boolean;
   setIsBlockDisplay: (isBlock: boolean) => void;
   autoFollow?: boolean;
+  fragmentSpacing: FragmentSpacing;
 }
 
 export const ContentViewer: React.FC<ContentViewerProps> = ({
@@ -43,7 +44,8 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
   setIsHtmlEditMode,
   isBlockDisplay,
   setIsBlockDisplay,
-  autoFollow = true
+  autoFollow = true,
+  fragmentSpacing,
 }) => {
   const [editedHtml, setEditedHtml] = useState<string | null>(null);
   const [isCutToolSticky, setIsCutToolSticky] = useState<boolean>(false);
@@ -117,9 +119,11 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
           const isSelected = selectedFragment?.id === fragment.id;
           const wrapper = doc.createElement('span');
           wrapper.setAttribute('data-fragment-id', fragment.id);
+          const spacingClass = FRAGMENT_SPACING_CLASSES[fragmentSpacing];
+          const marginClass = isBlockDisplay ? spacingClass : '';
           let className = isSelected
-            ? 'bg-blue-200 dark:bg-blue-800 border border-blue-400 dark:border-blue-600 rounded px-1'
-            : `${isBlockDisplay ? 'block ' : ''}bg-gray-100 dark:bg-gray-800 border border-green-300 w-fit ${isBlockDisplay ? 'my-2 ' : ''}dark:border-gray-600 rounded px-1 hover:bg-green-200 dark:hover:bg-gray-700`;
+            ? `${marginClass ? marginClass + ' ' : ''}bg-blue-200 dark:bg-blue-800 border border-blue-400 dark:border-blue-600 rounded px-1`
+            : `${isBlockDisplay ? 'block ' : ''}bg-gray-100 dark:bg-gray-800 border border-green-300 w-fit ${marginClass ? marginClass + ' ' : ''}dark:border-gray-600 rounded px-1 hover:bg-green-200 dark:hover:bg-gray-700`;
 
           if (isCutToolActive) {
             className += ' cursor-crosshair';
