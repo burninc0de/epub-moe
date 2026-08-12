@@ -1,6 +1,52 @@
 import { SMILFragment } from '../types/epub';
 import { create } from 'xmlbuilder2';
 
+export const formatSMILDuration = (seconds: number): string => {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toFixed(2).padStart(5, '0')}`;
+};
+
+export const calculateTotalDuration = (fragments: SMILFragment[]): number => {
+  if (fragments.length === 0) return 0;
+
+  return Math.max(...fragments.map(f => f.clipEnd));
+};
+
+export const updateOPFWithDuration = async (opfContent: string, mediaDurations: Map<string, number>): Promise<string> => {
+  let updatedContent = opfContent;
+
+  updatedContent = updatedContent.replace(/<meta[^>]*property="media:duration"[^>]*>.*?<\/meta>/g, '');
+  updatedContent = updatedContent.replace(/<meta[^>]*property="media:duration"[^>]*\/>/g, '');
+
+  let totalDuration = 0;
+  const mediaDurationEntries: string[] = [];
+
+  for (const [overlayId, duration] of mediaDurations) {
+    totalDuration += duration;
+
+    mediaDurationEntries.push(
+      `    <meta property="media:duration" refines="#${overlayId}">${formatSMILDuration(duration)}</meta>`
+    );
+  }
+
+  mediaDurationEntries.push(
+    `    <meta property="media:duration">${formatSMILDuration(totalDuration)}</meta>`
+  );
+
+  const metadataCloseIndex = updatedContent.lastIndexOf('</metadata>');
+  if (metadataCloseIndex !== -1) {
+    updatedContent =
+      updatedContent.slice(0, metadataCloseIndex) +
+      mediaDurationEntries.join('\n') + '\n  ' +
+      updatedContent.slice(metadataCloseIndex);
+  }
+
+  return updatedContent;
+};
+
 const getExportParId = (fragmentId: string, smilId: string): string => {
   const prefix = `${smilId}::`;
   if (fragmentId.startsWith(prefix)) {

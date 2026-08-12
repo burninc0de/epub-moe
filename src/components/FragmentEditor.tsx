@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Plus, Trash2, Split } from 'lucide-react';
 import { SMILFragment } from '../types/epub';
+import { formatTimeWithMs, parseTimeInput } from '../utils/time';
 
 interface FragmentEditorProps {
   fragments: SMILFragment[];
@@ -23,23 +24,6 @@ export const FragmentEditor: React.FC<FragmentEditorProps> = ({
   const [startTimeInput, setStartTimeInput] = useState('');
   const [endTimeInput, setEndTimeInput] = useState('');
 
-  const formatTime = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    const ms = Math.floor((seconds % 1) * 1000);
-    return `${mins}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(3, '0')}`;
-  };
-
-  const parseTimeInput = (timeStr: string): number => {
-    const parts = timeStr.split(':');
-    if (parts.length === 2) {
-      const [mins, secsMs] = parts;
-      const [secs, ms = '0'] = secsMs.split('.');
-      return parseInt(mins) * 60 + parseInt(secs) + parseInt(ms.padEnd(3, '0')) / 1000;
-    }
-    return parseFloat(timeStr) || 0;
-  };
-
   useEffect(() => {
     if (!selectedFragment) {
       setStartTimeInput('');
@@ -47,13 +31,13 @@ export const FragmentEditor: React.FC<FragmentEditorProps> = ({
       return;
     }
 
-    setStartTimeInput(formatTime(selectedFragment.clipBegin));
-    setEndTimeInput(formatTime(selectedFragment.clipEnd));
+    setStartTimeInput(formatTimeWithMs(selectedFragment.clipBegin));
+    setEndTimeInput(formatTimeWithMs(selectedFragment.clipEnd));
   }, [selectedFragment]);
 
   const hasTimingChanges = selectedFragment
-    ? startTimeInput !== formatTime(selectedFragment.clipBegin) ||
-      endTimeInput !== formatTime(selectedFragment.clipEnd)
+    ? startTimeInput !== formatTimeWithMs(selectedFragment.clipBegin) ||
+      endTimeInput !== formatTimeWithMs(selectedFragment.clipEnd)
     : false;
 
   const handleApplyTiming = () => {

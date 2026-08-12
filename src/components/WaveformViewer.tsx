@@ -1,9 +1,11 @@
-const REGION_EPSILON = 0.01; // 10ms tolerance for floating point imprecision
 import { useEffect, useRef, useState, useCallback, forwardRef, useImperativeHandle } from 'react';
 import WaveSurfer from 'wavesurfer.js';
 import RegionsPlugin from 'wavesurfer.js/dist/plugins/regions.js';
 import { Play, Pause, Square, ZoomIn, ZoomOut, RotateCcw, Clock, Magnet, AlertTriangle } from 'lucide-react';
 import { SMILFragment } from '../types/epub';
+import { formatTime, parseTimeInput } from '../utils/time';
+
+const REGION_EPSILON = 0.01; // 10ms tolerance for floating point imprecision
 
 interface WaveformViewerProps {
   audioBlob: Blob;
@@ -417,18 +419,19 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
     highlightFragmentRegion(fragment);
   };
 
+  const selectedFragmentIndex = selectedFragment
+    ? fragments.findIndex(f => f.id === selectedFragment.id)
+    : -1;
+
   const handlePrevFragment = () => {
-    if (!selectedFragment || fragments.length === 0) return;
-    const idx = fragments.findIndex(f => f.id === selectedFragment.id);
-    if (idx > 0) {
-      selectAndSeekFragment(fragments[idx - 1]);
+    if (selectedFragmentIndex > 0) {
+      selectAndSeekFragment(fragments[selectedFragmentIndex - 1]);
     }
   };
+
   const handleNextFragment = () => {
-    if (!selectedFragment || fragments.length === 0) return;
-    const idx = fragments.findIndex(f => f.id === selectedFragment.id);
-    if (idx !== -1 && idx < fragments.length - 1) {
-      selectAndSeekFragment(fragments[idx + 1]);
+    if (selectedFragmentIndex !== -1 && selectedFragmentIndex < fragments.length - 1) {
+      selectAndSeekFragment(fragments[selectedFragmentIndex + 1]);
     }
   };
 
@@ -448,22 +451,6 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
     prevFragment: handlePrevFragment,
     nextFragment: handleNextFragment,
   }));
-
-  const formatTime = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const parseTimeInput = (timeStr: string): number => {
-    const parts = timeStr.split(':');
-    if (parts.length === 2) {
-      const [mins, secsMs] = parts;
-      const [secs, ms = '0'] = secsMs.split('.');
-      return parseInt(mins) * 60 + parseInt(secs) + parseInt(ms.padEnd(3, '0')) / 1000;
-    }
-    return parseFloat(timeStr) || 0;
-  };
 
   const handleApplyOffset = () => {
     const fromTime = parseTimeInput(offsetTime);
@@ -544,10 +531,10 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
           </div>
           {/* Next/Previous Fragment Buttons */}
           <div className="flex items-center gap-2">
-            <button onClick={handlePrevFragment} className="p-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600" title="Previous Fragment" disabled={!selectedFragment || fragments.findIndex(f => f.id === selectedFragment.id) <= 0}>
+            <button onClick={handlePrevFragment} className="p-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600" title="Previous Fragment" disabled={selectedFragmentIndex <= 0}>
               &#8592; Prev
             </button>
-            <button onClick={handleNextFragment} className="p-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600" title="Next Fragment" disabled={!selectedFragment || fragments.findIndex(f => f.id === selectedFragment.id) === -1 || fragments.findIndex(f => f.id === selectedFragment.id) >= fragments.length - 1}>
+            <button onClick={handleNextFragment} className="p-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600" title="Next Fragment" disabled={selectedFragmentIndex === -1 || selectedFragmentIndex >= fragments.length - 1}>
               Next &#8594;
             </button>
           </div>

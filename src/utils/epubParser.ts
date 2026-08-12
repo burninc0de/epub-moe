@@ -2,6 +2,9 @@ import JSZip from 'jszip';
 import { parseString } from 'xml2js';
 import { EPUBData, EPUBChapter, SMILFragment, AudioFile } from '../types/epub';
 
+const XHTML_MEDIA_TYPE = 'application/xhtml+xml';
+const SMIL_MEDIA_TYPE = 'application/smil+xml';
+
 export const resolvePath = (from: string, to: string): string => {
   const fromParts = from.split('/').slice(0, -1);
   const toParts = to.split('/');
@@ -22,6 +25,7 @@ export class EPUBParser {
   private containerXml: any;
   private opfPath: string = '';
   private opfData: any;
+  private basePath: string | null = null;
 
   constructor(zip: JSZip) {
     this.zip = zip;
@@ -69,7 +73,7 @@ export class EPUBParser {
       const idref = spineItem.$.idref;
       const manifestItem = manifest.find((item: any) => item.$.id === idref);
       
-      if (manifestItem && manifestItem.$['media-type'] === 'application/xhtml+xml') {
+      if (manifestItem && manifestItem.$['media-type'] === XHTML_MEDIA_TYPE) {
         const chapterPath = this.calculateBasePath() + manifestItem.$.href;
         const chapterFile = this.zip.file(chapterPath);
         
@@ -94,7 +98,7 @@ export class EPUBParser {
     const manifest = this.opfData.package.manifest[0].item;
     
     for (const item of manifest) {
-      if (item.$ && item.$['media-type'] === 'application/smil+xml') {
+      if (item.$ && item.$['media-type'] === SMIL_MEDIA_TYPE) {
         const smilPath = this.calculateBasePath() + item.$.href;
         const smilFile = this.zip.file(smilPath);
         
@@ -186,12 +190,17 @@ export class EPUBParser {
   }
 
   private calculateBasePath(): string {
+    if (this.basePath !== null) return this.basePath;
+
     const parts = this.opfPath.split('/');
     if (parts.length > 1) {
       parts.pop();
-      return parts.join('/') + '/';
+      this.basePath = parts.join('/') + '/';
+    } else {
+      this.basePath = '';
     }
-    return '';
+
+    return this.basePath;
   }
 
   public async getBasePath(): Promise<string> {

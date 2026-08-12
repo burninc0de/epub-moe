@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { EPUBParser } from '../utils/epubParser';
-import { buildSMIL } from '../utils/smilBuilder';
+import { buildSMIL, calculateTotalDuration, updateOPFWithDuration } from '../utils/smilBuilder';
 import { EPUBData, EPUBChapter, SMILFragment } from '../types/epub';
 
 const LAST_CHAPTER_KEY = 'nuTobi:lastSelectedChapter';
@@ -577,62 +577,6 @@ export const useEPUBEditor = () => {
       lastAudioFileBlobRef.current = null;
     }
   }, [epubData, selectedChapter]);
-
-  // Helper function to format duration as SMIL3 clock value (HH:MM:SS.mmm)
-  const formatSMILDuration = (seconds: number): string => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-    
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toFixed(2).padStart(5, '0')}`;
-  };
-
-  // Helper function to calculate total duration from SMIL fragments
-  const calculateTotalDuration = (fragments: SMILFragment[]): number => {
-    if (fragments.length === 0) return 0;
-    
-    // Find the maximum clipEnd time across all fragments
-    return Math.max(...fragments.map(f => f.clipEnd));
-  };
-
-  // Helper function to update OPF metadata with media:duration
-  const updateOPFWithDuration = async (opfContent: string, mediaDurations: Map<string, number>): Promise<string> => {
-    // Use string replacement instead of DOM manipulation to avoid namespace issues
-    let updatedContent = opfContent;
-    
-    // Remove existing media:duration elements
-    updatedContent = updatedContent.replace(/<meta[^>]*property="media:duration"[^>]*>.*?<\/meta>/g, '');
-    updatedContent = updatedContent.replace(/<meta[^>]*property="media:duration"[^>]*\/>/g, '');
-    
-    // Calculate total duration across all chapters
-    let totalDuration = 0;
-    const mediaDurationEntries: string[] = [];
-    
-    for (const [overlayId, duration] of mediaDurations) {
-      totalDuration += duration;
-      
-      // Add individual chapter duration
-      mediaDurationEntries.push(
-        `    <meta property="media:duration" refines="#${overlayId}">${formatSMILDuration(duration)}</meta>`
-      );
-    }
-    
-    // Add total duration
-    mediaDurationEntries.push(
-      `    <meta property="media:duration">${formatSMILDuration(totalDuration)}</meta>`
-    );
-    
-    // Find the closing metadata tag and insert before it
-    const metadataCloseIndex = updatedContent.lastIndexOf('</metadata>');
-    if (metadataCloseIndex !== -1) {
-      updatedContent = 
-        updatedContent.slice(0, metadataCloseIndex) +
-        mediaDurationEntries.join('\n') + '\n  ' +
-        updatedContent.slice(metadataCloseIndex);
-    }
-    
-    return updatedContent;
-  };
 
   const exportEPUB = useCallback(async () => {
     if (!epubData || !originalZip) return;
