@@ -132,15 +132,14 @@ const App: React.FC = () => {
 
       if (isHtmlEditMode) return;
 
-      if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
-        event.preventDefault();
-        toggleCutToolSticky();
-        return;
-      }
-
       const active = document.activeElement;
       const isRangeInput = active instanceof HTMLInputElement && active.type === 'range';
       if (isInputField(active) && !isRangeInput) return;
+
+      if (event.code === 'KeyX') {
+        toggleCutToolSticky();
+        return;
+      }
 
       if (event.code === 'Space') {
         event.preventDefault(); // Prevent default spacebar behavior (e.g., scrolling, slider activation)

@@ -419,7 +419,7 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
               ? 'bg-orange-500/15 text-orange-400 hover:bg-orange-500/25'
               : 'bg-blue-500/15 text-blue-400 hover:bg-blue-500/25'
             }
-            title={isCutToolSticky ? 'Cut Tool (Sticky Mode) - Double-click or Ctrl+S to disable' : isCutToolActive ? 'Deactivate Cut Tool - Double-click or Ctrl+S for sticky mode' : 'Activate Cut Tool - Double-click or Ctrl+S for sticky mode'}
+            title={isCutToolSticky ? 'Cut Tool (Sticky Mode) - Double-click or X to disable' : isCutToolActive ? 'Deactivate Cut Tool - Double-click or X for sticky mode' : 'Activate Cut Tool - Double-click or X for sticky mode'}
           >
             <Scissors className="w-4 h-4" />
           </IconButton>

@@ -102,7 +102,7 @@ npm run test:playwright
 
 - **Scissors icon (Cut Tool)**: Split text fragments at desired points with intelligent word-boundary snapping
   - **Single click**: Activate/deactivate the cut tool
-  - **Double-click or Ctrl+S / Cmd+S**: Toggle sticky mode (keeps tool active for multiple cuts)
+  - **Double-click or X**: Toggle sticky mode (keeps tool active for multiple cuts)
   - **Color states**: Gray (inactive), Blue (single-use), Orange (sticky mode)
   - **Smart splitting**: Automatically snaps to nearest word boundary (spaces/hyphens) to prevent mid-word cuts
   - When you split a text fragment, the corresponding audio is automatically split as well
@@ -127,7 +127,7 @@ npm run test:playwright
 - **Spacebar**: Toggle audio playback
 - **Left / Right arrows**: Jump to previous / next fragment
 - **R**: Replay the current fragment from its start
-- **Ctrl+S / Cmd+S**: Toggle cut tool sticky mode (same as double-clicking the scissors icon)
+- **X**: Toggle cut tool sticky mode (same as double-clicking the scissors icon)
 - **Ctrl / Cmd + scroll**: Zoom text in the content viewer (or HTML editor when open)
 - **Ctrl/Cmd + `0`**: Reset zoom to 100%
 - Zoom shortcuts also work while typing; playback, navigation, and cut-tool shortcuts are disabled while the HTML editor is active or when typing in a text field
