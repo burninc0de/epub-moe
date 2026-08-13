@@ -132,6 +132,7 @@ const App: React.FC = () => {
     splitFragment,
     addFragment,
     splitFragmentByText,
+    nudgeFragmentStart,
     applyTimeOffset,
     forceNonOverlappingFragments,
     getCurrentChapter,
@@ -206,9 +207,21 @@ const App: React.FC = () => {
           waveformViewerRef.current.togglePlayback();
         }
       } else if (event.code === 'ArrowLeft') {
+        if (event.ctrlKey || event.metaKey) {
+          event.preventDefault();
+          if (isRangeInput) (active as HTMLInputElement).blur();
+          if (selectedFragment) nudgeFragmentStart(selectedFragment.id, -0.05);
+          return;
+        }
         if (isRangeInput) (active as HTMLInputElement).blur();
         waveformViewerRef.current?.prevFragment();
       } else if (event.code === 'ArrowRight') {
+        if (event.ctrlKey || event.metaKey) {
+          event.preventDefault();
+          if (isRangeInput) (active as HTMLInputElement).blur();
+          if (selectedFragment) nudgeFragmentStart(selectedFragment.id, 0.05);
+          return;
+        }
         if (isRangeInput) (active as HTMLInputElement).blur();
         waveformViewerRef.current?.nextFragment();
       } else if (event.code === 'KeyR') {
@@ -221,7 +234,7 @@ const App: React.FC = () => {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isHtmlEditMode, toggleCutToolSticky, handleExportEPUB, isLoadingExport]);
+  }, [isHtmlEditMode, toggleCutToolSticky, handleExportEPUB, isLoadingExport, nudgeFragmentStart, selectedFragment]);
 
   const handleAutoFollowChange = useCallback((value: boolean) => {
     setAutoFollow(value);
