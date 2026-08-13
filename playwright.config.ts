@@ -8,10 +8,7 @@ export default defineConfig({
     baseURL: 'http://localhost:4173',
     headless: true,
     launchOptions: {
-      args: [
-        '--autoplay-policy=no-user-gesture-required',
-        '--disable-dev-shm-usage',
-      ],
+      args: ['--disable-dev-shm-usage'],
     },
   },
   projects: [

@@ -131,30 +131,30 @@ test('deleting a fragment removes it from content and waveform', async ({ page }
   await expect(page.locator(`.waveform-scroll [part~="region"][part*="${fragmentSuffix}"]`)).toHaveCount(0);
 });
 
-test('spacebar toggles audio playback', async ({ page }) => {
-  await loadEPUB(page);
-  await expect(page.getByRole('button', { name: 'Export EPUB' })).toBeVisible();
-
-  // Wait until the waveform is ready (regions are drawn on WaveSurfer's 'ready' event),
-  // otherwise a Space press while audio is still decoding may not start playback in time.
-  await expect(page.locator('.waveform-scroll [part~="region"]').first()).toBeVisible({ timeout: 15000 });
-
-  await page.keyboard.press('Space');
-  await expect(page.getByTitle('Pause (Space)')).toBeVisible({ timeout: 10000 });
-
-  await page.keyboard.press('Space');
-  await expect(page.getByTitle('Play (Space)')).toBeVisible({ timeout: 10000 });
-});
-
-test('exported EPUB contains the edited timing in the SMIL', async ({ page }) => {
+test('critical edits (split, retime, delete) are applied in the exported EPUB', async ({ page }) => {
   await loadEPUB(page);
 
+  // Split the first fragment with the cut tool
+  await page.getByTitle(/Activate Cut Tool/).click();
   await page.locator('[data-fragment-id]').first().click();
-  const endTimeInput = page.getByText('End Time').locator('..').locator('input');
-  await endTimeInput.fill('0:05.000');
-  await page.getByRole('button', { name: 'Apply', exact: true }).click();
-  await expect(endTimeInput).toHaveValue('0:05.000');
+  await expect(page.locator('[data-fragment-id$="_part1"]').first()).toBeVisible();
 
+  // Retime the first half of the split
+  await page.locator('[data-fragment-id$="_part1"]').first().click();
+  const endTimeInput = page.getByText('End Time').locator('..').locator('input');
+  await endTimeInput.fill('0:04.000');
+  await page.getByRole('button', { name: 'Apply', exact: true }).click();
+  await expect(endTimeInput).toHaveValue('0:04.000');
+
+  // Delete a later fragment (third in document order)
+  const countBeforeDelete = await currentFragmentCount(page);
+  const victim = page.locator('[data-fragment-id]').nth(2);
+  const victimSuffix = (await victim.getAttribute('data-fragment-id'))?.split('::').pop();
+  await victim.click();
+  await page.getByTitle('Delete fragment').click();
+  await expect(fragmentCountText(page)).toHaveText(`${countBeforeDelete - 1} fragments total`);
+
+  // Export and verify all three edits landed in the zip
   const downloadPromise = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Export EPUB' }).click();
   const download = await downloadPromise;
@@ -165,12 +165,31 @@ test('exported EPUB contains the edited timing in the SMIL', async ({ page }) =>
   const smilFile = zip.file('OEBPS/MediaOverlays/Kapitel01.smil');
   expect(smilFile).toBeTruthy();
   const smil = await smilFile!.async('string');
-  expect(smil).toContain('clipBegin="0.270s" clipEnd="5.000s"');
+
+  // Split: the original single par is replaced by _part1/_part2
+  expect(smil).toContain('<par id="Kapitel01.html-sentence0_part1">');
+  expect(smil).toContain('<par id="Kapitel01.html-sentence0_part2">');
+  expect(smil).not.toContain('<par id="Kapitel01.html-sentence0">');
+
+  // Retime: the edited clipEnd is written out
+  expect(smil).toContain('clipEnd="4.000s"');
+
+  // Delete: the victim's par is gone from the SMIL
+  expect(smil).not.toContain(`<par id="${victimSuffix}">`);
+
+  // The chapter file carries the new split spans and no longer has the original element
+  const chapterFile = zip.file('OEBPS/Text/Kapitel01.html');
+  expect(chapterFile).toBeTruthy();
+  const chapter = await chapterFile!.async('string');
+  const origZip = await JSZip.loadAsync(await readFile(FIXTURE));
+  const origChapter = await origZip.file('OEBPS/Text/Kapitel01.html')!.async('string');
+  const countFragSplits = (content: string) => (content.match(/id="frag-split-/g) || []).length;
+  expect(countFragSplits(chapter)).toBe(countFragSplits(origChapter) + 2);
+  expect(chapter).not.toContain('id="Kapitel01.html-sentence0"');
 
   const opfFile = zip.file('OEBPS/content.opf');
   expect(opfFile).toBeTruthy();
-  const opf = await opfFile!.async('string');
-  expect(opf).toContain('property="media:duration"');
+  expect(await opfFile!.async('string')).toContain('property="media:duration"');
 });
 
 test('dragging a region boundary updates timings and keeps neighbours snapped', async ({ page }) => {

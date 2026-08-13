@@ -76,7 +76,7 @@ Note: only files in `public/` are copied into the production build, so root-leve
 
 ## Testing
 
-`npm test` runs the full gate: lint, production build, then Playwright smoke tests. The smoke tests cover the critical paths: EPUB opens, waveform renders and maps fragments to regions, region drag with neighbour snapping, HTML editor open/save/cancel, fragment selection, the cut tool (splitting at a word boundary), split-at-time, timing edits, deletion, apply time offset, force align, spacebar playback, EPUB export, and exported-content verification (the edited timing must appear in the SMIL inside the downloaded EPUB).
+`npm test` runs the full gate: lint, production build, then Playwright smoke tests. The smoke tests focus on the critical paths: EPUB opens, waveform renders and maps fragments to regions, region drag with neighbour snapping, HTML editor open/save/cancel, fragment selection, the cut tool (splitting at a word boundary), split-at-time, timing edits, deletion, apply time offset, force align, and EPUB export. The export test is the centerpiece: it makes a split, a retime, and a deletion, then unzips the downloaded EPUB and verifies all three edits landed in the SMIL, chapter HTML, and OPF.
 
 ```bash
 npm test
