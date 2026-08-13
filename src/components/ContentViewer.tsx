@@ -184,7 +184,7 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
           const spacingClass = FRAGMENT_SPACING_CLASSES[fragmentSpacing];
           const marginClass = isBlockDisplay ? spacingClass : '';
           let className = isSelected
-            ? `${marginClass ? marginClass + ' ' : ''}bg-blue-500/25 border border-blue-500/70 rounded px-1`
+            ? `${isBlockDisplay ? 'block ' : ''}${marginClass ? marginClass + ' ' : ''}bg-blue-500/25 border border-blue-500/70 w-fit rounded px-1`
             : `${isBlockDisplay ? 'block ' : ''}bg-raised border border-gray-700 w-fit ${marginClass ? marginClass + ' ' : ''}rounded px-1 hover:bg-gray-700 hover:border-gray-500`;
 
           if (isCutToolActive) {
