@@ -148,6 +148,8 @@ const App: React.FC = () => {
       } else if (event.code === 'ArrowRight') {
         if (isRangeInput) return; // Let the slider handle its own arrows
         waveformViewerRef.current?.nextFragment();
+      } else if (event.code === 'KeyR') {
+        waveformViewerRef.current?.replayFragment();
       }
     };
 

@@ -126,6 +126,7 @@ npm run test:playwright
 
 - **Spacebar**: Toggle audio playback
 - **Left / Right arrows**: Jump to previous / next fragment
+- **R**: Replay the current fragment from its start
 - **Ctrl+S / Cmd+S**: Toggle cut tool sticky mode (same as double-clicking the scissors icon)
 - **Ctrl / Cmd + scroll**: Zoom text in the content viewer (or HTML editor when open)
 - **Ctrl/Cmd + `0`**: Reset zoom to 100%

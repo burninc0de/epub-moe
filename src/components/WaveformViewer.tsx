@@ -66,6 +66,7 @@ export interface WaveformViewerHandles {
   seekToFragment: (fragment: SMILFragment) => void;
   prevFragment: () => void;
   nextFragment: () => void;
+  replayFragment: () => void;
 }
 
 export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerProps>(({
@@ -511,12 +512,19 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
   const togglePlayback = () => wavesurfer.current?.playPause();
   const stopPlayback = () => wavesurfer.current?.stop();
 
+  const handleReplayFragment = () => {
+    if (!selectedFragment) return;
+    seekToFragment(selectedFragment);
+    wavesurfer.current?.play();
+  };
+
   // Expose togglePlayback and seekToFragment via useImperativeHandle
   useImperativeHandle(ref, () => ({
     togglePlayback,
     seekToFragment,
     prevFragment: handlePrevFragment,
     nextFragment: handleNextFragment,
+    replayFragment: handleReplayFragment,
   }));
 
   const handleApplyOffset = () => {
