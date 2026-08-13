@@ -9,6 +9,7 @@ import { Button, IconButton, FieldLabel, TextInput, ToolbarDivider, Modal } from
 
 const REGION_EPSILON = 0.01; // 10ms tolerance for floating point imprecision
 const VOLUME_KEY = 'waveformVolume';
+const ZOOM_LEVEL_KEY = 'waveformZoom';
 const DEFAULT_VOLUME = 1;
 
 export type RegionColorStyle = 'modern' | 'classic';
@@ -86,7 +87,11 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
   useEffect(() => { fragmentsRef.current = fragments; }, [fragments]);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
-  const [zoomLevel, setZoomLevel] = useState(DEFAULT_ZOOM);
+  const [zoomLevel, setZoomLevel] = useState(() => {
+    const stored = parseInt(localStorage.getItem(ZOOM_LEVEL_KEY) ?? '', 10);
+    if (!Number.isFinite(stored)) return DEFAULT_ZOOM;
+    return Math.max(MIN_ZOOM, Math.min(stored, MAX_ZOOM));
+  });
   const [isDragging, setIsDragging] = useState(false);
   const [draggedRegionId, setDraggedRegionId] = useState<string | null>(null);
   const [showOffsetDialog, setShowOffsetDialog] = useState(false);
@@ -106,6 +111,10 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
   const zoomLevelRef = useRef(zoomLevel);
   useEffect(() => {
     zoomLevelRef.current = zoomLevel;
+  }, [zoomLevel]);
+
+  useEffect(() => {
+    localStorage.setItem(ZOOM_LEVEL_KEY, String(zoomLevel));
   }, [zoomLevel]);
 
   // Refs to hold the latest callbacks
