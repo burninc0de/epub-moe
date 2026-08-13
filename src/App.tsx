@@ -46,6 +46,7 @@ const App: React.FC = () => {
   const [isRightPanelCollapsed, setIsRightPanelCollapsed] = useState(() => localStorage.getItem(RIGHT_PANEL_COLLAPSED_KEY) === 'true');
   const [isLeftPanelCollapsed, setIsLeftPanelCollapsed] = useState(() => localStorage.getItem(LEFT_PANEL_COLLAPSED_KEY) === 'true');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [showReloadWarning, setShowReloadWarning] = useState(false);
   const [autoFollow, setAutoFollow] = useState(() => localStorage.getItem(AUTO_FOLLOW_KEY) !== 'false');
   const [onlyAudioChapters, setOnlyAudioChapters] = useState(() => localStorage.getItem(ONLY_AUDIO_CHAPTERS_KEY) === 'true');
   const [fragmentSpacing, setFragmentSpacing] = useState<FragmentSpacing>(() => {
@@ -123,6 +124,12 @@ const App: React.FC = () => {
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.code === 'F5' || ((event.ctrlKey || event.metaKey) && event.code === 'KeyR')) {
+        event.preventDefault();
+        setShowReloadWarning(true);
+        return;
+      }
+
       if (isHtmlEditMode) return;
 
       if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
@@ -495,6 +502,18 @@ const App: React.FC = () => {
             regionColorStyle={regionColorStyle}
             onRegionColorStyleChange={handleRegionColorStyleChange}
           />
+        </Modal>
+      )}
+
+      {showReloadWarning && (
+        <Modal title="Are you sure?" onClose={() => setShowReloadWarning(false)} className="max-w-sm">
+          <div className="text-sm text-gray-400 mb-5">
+            You may lose unexported work. Reload anyway?
+          </div>
+          <div className="flex gap-2 justify-end">
+            <Button variant="ghost" onClick={() => setShowReloadWarning(false)}>Cancel</Button>
+            <Button variant="primary" onClick={() => window.location.reload()}>Reload</Button>
+          </div>
         </Modal>
       )}
     </div>

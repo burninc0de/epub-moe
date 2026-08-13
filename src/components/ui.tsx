@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
@@ -106,14 +106,25 @@ interface ModalProps {
   children: React.ReactNode;
 }
 
-export const Modal: React.FC<ModalProps> = ({ title, onClose, className = 'max-w-sm', children }) => (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
-    <div
-      className={`w-full ${className} bg-panel border border-line rounded-lg shadow-2xl p-5`}
-      onClick={(e) => e.stopPropagation()}
-    >
-      {title && <h3 className="text-base font-semibold text-gray-100 mb-4">{title}</h3>}
-      {children}
+export const Modal: React.FC<ModalProps> = ({ title, onClose, className = 'max-w-sm', children }) => {
+  useEffect(() => {
+    if (!onClose) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
+      <div
+        className={`w-full ${className} bg-panel border border-line rounded-lg shadow-2xl p-5`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {title && <h3 className="text-base font-semibold text-gray-100 mb-4">{title}</h3>}
+        {children}
+      </div>
     </div>
-  </div>
-);
+  );
+};
