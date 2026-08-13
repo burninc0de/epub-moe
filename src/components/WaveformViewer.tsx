@@ -584,6 +584,7 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
             step="0.01"
             value={volume}
             onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
+            onPointerUp={(e) => e.currentTarget.blur()}
             className="volume-slider w-24 cursor-pointer"
             title="Volume"
           />
