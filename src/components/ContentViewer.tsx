@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, lazy, Suspense } from 'react';
+import React, { useEffect, useRef, useState, useLayoutEffect, useCallback, lazy, Suspense } from 'react';
 import './ContentViewer.css';
 import { Scissors, AlignJustify, Text, Code } from 'lucide-react';
 import { EPUBChapter, SMILFragment, FragmentSpacing, FRAGMENT_SPACING_CLASSES } from '../types/epub';
@@ -48,6 +48,7 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
   codeThemeId = null,
 }) => {
   const [editedHtml, setEditedHtml] = useState<string | null>(null);
+  const [cutPreview, setCutPreview] = useState<{ fragmentId: string; splitIndex: number } | null>(null);
   const [cutPreviewPosition, setCutPreviewPosition] = useState<{ x: number; y: number; height: number } | null>(null);
   const [splitNotice, setSplitNotice] = useState<string | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -86,6 +87,59 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
     if (!el) return;
     el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
   }, [selectedFragment, autoFollow]);
+
+  useEffect(() => {
+    if (!isCutToolActive) setCutPreview(null);
+  }, [isCutToolActive]);
+
+  const getTextNodeAtIndex = useCallback((element: Element, index: number): { node: Node; offset: number } | null => {
+    const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+    let currentIndex = 0;
+    let node: Node | null;
+
+    while ((node = walker.nextNode())) {
+      const textLength = node.textContent?.length || 0;
+      if (currentIndex + textLength >= index) {
+        return { node, offset: index - currentIndex };
+      }
+      currentIndex += textLength;
+    }
+
+    return null;
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!cutPreview) {
+      setCutPreviewPosition(null);
+      return;
+    }
+
+    const wrapper = scrollContainerRef.current?.querySelector(`[data-fragment-id="${cutPreview.fragmentId}"]`);
+    if (!wrapper) {
+      setCutPreviewPosition(null);
+      return;
+    }
+
+    const textNode = getTextNodeAtIndex(wrapper, cutPreview.splitIndex);
+    if (!textNode) {
+      setCutPreviewPosition(null);
+      return;
+    }
+
+    const range = document.createRange();
+    range.setStart(textNode.node, textNode.offset);
+    range.setEnd(textNode.node, textNode.offset);
+    const rect = range.getBoundingClientRect();
+
+    const computedStyle = window.getComputedStyle(textNode.node.parentElement || (wrapper as Element));
+    const lineHeight = parseFloat(computedStyle.lineHeight) || rect.height || 20;
+
+    setCutPreviewPosition({
+      x: rect.left,
+      y: rect.top,
+      height: lineHeight,
+    });
+  }, [cutPreview, fontScale, getTextNodeAtIndex]);
 
   if (!chapter) {
     return (
@@ -235,59 +289,46 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
 
   const handleContentMouseMove = (e: React.MouseEvent) => {
     if (!isCutToolActive) {
-      setCutPreviewPosition(null);
+      setCutPreview(null);
       return;
     }
 
     const target = e.target as HTMLElement;
     const fragmentWrapper = target.closest('[data-fragment-id]');
     if (!fragmentWrapper) {
-      setCutPreviewPosition(null);
+      setCutPreview(null);
       return;
     }
 
     // Create a range at the mouse position
     const range = document.caretRangeFromPoint(e.clientX, e.clientY);
     if (!range) {
-      setCutPreviewPosition(null);
+      setCutPreview(null);
       return;
     }
 
     const preCaretRange = range.cloneRange();
     preCaretRange.selectNodeContents(fragmentWrapper);
     preCaretRange.setEnd(range.endContainer, range.endOffset);
-    let splitIndex = preCaretRange.toString().length;
+    const splitIndex = preCaretRange.toString().length;
 
     // Apply word boundary snapping
     const fullText = fragmentWrapper.textContent || '';
     const adjustedIndex = findNearestWordBoundary(fullText, splitIndex);
-    
+
     // If invalid position (beginning/end of fragment), don't show preview
     if (adjustedIndex === -1) {
-      setCutPreviewPosition(null);
+      setCutPreview(null);
       return;
     }
-    
-    splitIndex = adjustedIndex;
 
-    // Create a range at the adjusted position
-    const textNode = getTextNodeAtIndex(fragmentWrapper, splitIndex);
-    if (textNode) {
-      const adjustedRange = document.createRange();
-      adjustedRange.setStart(textNode.node, textNode.offset);
-      adjustedRange.setEnd(textNode.node, textNode.offset);
-      const rect = adjustedRange.getBoundingClientRect();
-      
-      // Get the line height from the computed style or use the rect height
-      const computedStyle = window.getComputedStyle(textNode.node.parentElement || fragmentWrapper as Element);
-      const lineHeight = parseFloat(computedStyle.lineHeight) || rect.height || 20;
-      
-      setCutPreviewPosition({
-        x: rect.left,
-        y: rect.top,
-        height: lineHeight
-      });
+    const fragmentId = fragmentWrapper.getAttribute('data-fragment-id');
+    if (!fragmentId) {
+      setCutPreview(null);
+      return;
     }
+
+    setCutPreview({ fragmentId, splitIndex: adjustedIndex });
   };
 
   const getSplitIndexFromPointer = (fragmentWrapper: Element, clientX: number, clientY: number): number => {
@@ -305,22 +346,6 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
 
     const fullText = fragmentWrapper.textContent || '';
     return findNearestWordBoundary(fullText, splitIndex);
-  };
-
-  const getTextNodeAtIndex = (element: Element, index: number): { node: Node; offset: number } | null => {
-    const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
-    let currentIndex = 0;
-    let node: Node | null;
-
-    while ((node = walker.nextNode())) {
-      const textLength = node.textContent?.length || 0;
-      if (currentIndex + textLength >= index) {
-        return { node, offset: index - currentIndex };
-      }
-      currentIndex += textLength;
-    }
-
-    return null;
   };
 
   const handleContentClick = (e: React.MouseEvent) => {
@@ -486,7 +511,7 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
               style={{ fontSize: `${fontScale}rem` }}
               onClick={handleContentClick}
               onMouseMove={handleContentMouseMove}
-              onMouseLeave={() => setCutPreviewPosition(null)}
+              onMouseLeave={() => setCutPreview(null)}
               dangerouslySetInnerHTML={{ __html: getHighlightedContent() }}
             />
             {cutPreviewPosition && (
