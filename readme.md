@@ -127,7 +127,9 @@ npm run test:playwright
 - **Spacebar**: Toggle audio playback
 - **Left / Right arrows**: Jump to previous / next fragment
 - **Ctrl+S / Cmd+S**: Toggle cut tool sticky mode (same as double-clicking the scissors icon)
-- Shortcuts are disabled while the HTML editor is active or when typing in a text field
+- **Ctrl / Cmd + scroll**: Zoom text in the content viewer (or HTML editor when open)
+- **Ctrl/Cmd + `0`**: Reset zoom to 100%
+- Zoom shortcuts also work while typing; playback, navigation, and cut-tool shortcuts are disabled while the HTML editor is active or when typing in a text field
 
 ## Screenshots
 

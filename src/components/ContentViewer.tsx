@@ -3,12 +3,11 @@ import './ContentViewer.css';
 import { Scissors, AlignJustify, Text, Code } from 'lucide-react';
 import { EPUBChapter, SMILFragment, FragmentSpacing, FRAGMENT_SPACING_CLASSES } from '../types/epub';
 import { Button, IconButton } from './ui';
+import { useZoomWheel, MIN_FONT_SCALE, MAX_FONT_SCALE } from '../hooks/useZoomWheel';
 
 const HtmlEditor = lazy(() => import('./HtmlEditor'));
 
 const FONT_SCALE_KEY = 'fontScale';
-const MIN_FONT_SCALE = 0.5;
-const MAX_FONT_SCALE = 2.5;
 
 interface ContentViewerProps {  chapter: EPUBChapter | null;
   fragments: SMILFragment[];
@@ -51,21 +50,15 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
   const [editedHtml, setEditedHtml] = useState<string | null>(null);
   const [cutPreviewPosition, setCutPreviewPosition] = useState<{ x: number; y: number; height: number } | null>(null);
   const [splitNotice, setSplitNotice] = useState<string | null>(null);
-  const [fontScale, setFontScale] = useState<number>(() => {
-    const stored = parseFloat(localStorage.getItem(FONT_SCALE_KEY) ?? '');
-    if (!Number.isFinite(stored)) return 1;
-    return Math.min(MAX_FONT_SCALE, Math.max(MIN_FONT_SCALE, stored));
-  });
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const { fontScale, setFontScale } = useZoomWheel(scrollContainerRef, FONT_SCALE_KEY, !isHtmlEditMode);
   const [isEditingZoom, setIsEditingZoom] = useState(false);
   const [zoomInput, setZoomInput] = useState('');
 
   const commitZoom = (raw: string) => {
     const value = parseFloat(raw);
     if (Number.isFinite(value)) {
-      const next = Math.min(MAX_FONT_SCALE, Math.max(MIN_FONT_SCALE, value / 100));
-      setFontScale(next);
-      localStorage.setItem(FONT_SCALE_KEY, String(next));
+      setFontScale(value / 100);
     }
     setIsEditingZoom(false);
   };
@@ -74,37 +67,16 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
     const value = parseFloat(zoomInput);
     if (!Number.isFinite(value)) return;
     const timeout = window.setTimeout(() => {
-      const next = Math.min(MAX_FONT_SCALE, Math.max(MIN_FONT_SCALE, value / 100));
-      setFontScale(next);
-      localStorage.setItem(FONT_SCALE_KEY, String(next));
+      setFontScale(value / 100);
     }, 300);
     return () => window.clearTimeout(timeout);
-  }, [zoomInput]);
+  }, [zoomInput, setFontScale]);
 
   useEffect(() => {
     if (!splitNotice) return;
     const timeout = window.setTimeout(() => setSplitNotice(null), 2200);
     return () => window.clearTimeout(timeout);
   }, [splitNotice]);
-
-  useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-
-    const handleWheel = (e: WheelEvent) => {
-      if (!e.ctrlKey && !e.metaKey) return;
-      e.preventDefault();
-      const step = e.deltaY > 0 ? -0.1 : 0.1;
-      setFontScale((prev) => {
-        const next = Math.min(MAX_FONT_SCALE, Math.max(MIN_FONT_SCALE, prev + step));
-        localStorage.setItem(FONT_SCALE_KEY, String(next));
-        return next;
-      });
-    };
-
-    container.addEventListener('wheel', handleWheel, { passive: false });
-    return () => container.removeEventListener('wheel', handleWheel);
-  }, [isHtmlEditMode]);
 
   useEffect(() => {
     if (!selectedFragment || !autoFollow) return;
@@ -476,21 +448,20 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
                   }}
                   onBlur={() => commitZoom(zoomInput)}
                   className="w-14 text-center py-1 rounded-md text-xs font-medium bg-base border border-gray-700 text-gray-100 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  title="Zoom (Ctrl+scroll to zoom text)"
+                  title="Zoom (Ctrl/Cmd+scroll to zoom, Ctrl/Cmd+0 to reset)"
                 />
               ) : (
                 <button
                   onClick={() => {
-                    localStorage.setItem(FONT_SCALE_KEY, '1');
-                    setFontScale(1);
-                  }}
-                  onContextMenu={(e) => {
-                    e.preventDefault();
                     setZoomInput(String(Math.round(fontScale * 100)));
                     setIsEditingZoom(true);
                   }}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    setFontScale(1);
+                  }}
                   className="h-7 px-2 rounded-md text-xs font-medium tabular-nums text-gray-400 hover:text-gray-100 hover:bg-raised transition-colors"
-                  title="Click to reset zoom, right-click to set a custom value (Ctrl+scroll to zoom text)"
+                  title="Click to set a custom zoom value, right-click to reset to 100% (Ctrl/Cmd+scroll to zoom, Ctrl/Cmd+0 to reset)"
                 >
                   {Math.round(fontScale * 100)}%
                 </button>
