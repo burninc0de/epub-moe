@@ -149,10 +149,10 @@ const App: React.FC = () => {
           waveformViewerRef.current.togglePlayback();
         }
       } else if (event.code === 'ArrowLeft') {
-        if (isRangeInput) return; // Let the slider handle its own arrows
+        if (isRangeInput) (active as HTMLInputElement).blur();
         waveformViewerRef.current?.prevFragment();
       } else if (event.code === 'ArrowRight') {
-        if (isRangeInput) return; // Let the slider handle its own arrows
+        if (isRangeInput) (active as HTMLInputElement).blur();
         waveformViewerRef.current?.nextFragment();
       } else if (event.code === 'KeyR') {
         waveformViewerRef.current?.replayFragment();
