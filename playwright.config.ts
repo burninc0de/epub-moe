@@ -7,6 +7,12 @@ export default defineConfig({
   use: {
     baseURL: 'http://localhost:4173',
     headless: true,
+    launchOptions: {
+      args: [
+        '--autoplay-policy=no-user-gesture-required',
+        '--disable-dev-shm-usage',
+      ],
+    },
   },
   projects: [
     {

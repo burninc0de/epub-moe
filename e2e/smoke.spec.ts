@@ -135,11 +135,15 @@ test('spacebar toggles audio playback', async ({ page }) => {
   await loadEPUB(page);
   await expect(page.getByRole('button', { name: 'Export EPUB' })).toBeVisible();
 
-  await page.keyboard.press('Space');
-  await expect(page.getByTitle('Pause (Space)')).toBeVisible({ timeout: 5000 });
+  // Wait until the waveform is ready (regions are drawn on WaveSurfer's 'ready' event),
+  // otherwise a Space press while audio is still decoding may not start playback in time.
+  await expect(page.locator('.waveform-scroll [part~="region"]').first()).toBeVisible({ timeout: 15000 });
 
   await page.keyboard.press('Space');
-  await expect(page.getByTitle('Play (Space)')).toBeVisible();
+  await expect(page.getByTitle('Pause (Space)')).toBeVisible({ timeout: 10000 });
+
+  await page.keyboard.press('Space');
+  await expect(page.getByTitle('Play (Space)')).toBeVisible({ timeout: 10000 });
 });
 
 test('exported EPUB contains the edited timing in the SMIL', async ({ page }) => {
