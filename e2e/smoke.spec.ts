@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test';
 import { existsSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import path from 'node:path';
+import JSZip from 'jszip';
 
 const FIXTURE = path.join(process.cwd(), 'dld9_tb_preview.epub');
 
@@ -12,6 +14,23 @@ async function loadEPUB(page: import('@playwright/test').Page) {
   await page.goto('/');
   await page.setInputFiles('input[type="file"][accept=".epub"]', FIXTURE);
 }
+
+const fragmentCountText = (page: import('@playwright/test').Page) =>
+  page.getByText(/^\d+ fragments total$/);
+
+const currentFragmentCount = async (page: import('@playwright/test').Page) => {
+  const text = await fragmentCountText(page).textContent();
+  const match = text?.match(/(\d+)\s+fragments total/);
+  return match ? parseInt(match[1], 10) : -1;
+};
+
+const regionStyle = (region: import('@playwright/test').Locator) =>
+  region.evaluate((el) => ({ left: parseFloat(el.style.left), right: parseFloat(el.style.right) }));
+
+const gapBetweenRegions = async (a: import('@playwright/test').Locator, b: import('@playwright/test').Locator) => {
+  const [first, second] = await Promise.all([regionStyle(a), regionStyle(b)]);
+  return Math.abs(second.left - (100 - first.right));
+};
 
 test('EPUB opens and shows the chapter list', async ({ page }) => {
   await loadEPUB(page);
@@ -29,6 +48,19 @@ test('waveform renders after loading', async ({ page }) => {
   await expect(waveform.locator('[part="scroll"]')).toBeVisible();
 });
 
+test('waveform draws a region for the first fragment', async ({ page }) => {
+  await loadEPUB(page);
+
+  const regions = page.locator('.waveform-scroll [part~="region"]');
+  await expect(regions.first()).toBeVisible({ timeout: 10000 });
+  expect(await regions.count()).toBeGreaterThan(0);
+
+  const firstContentId = await page.locator('[data-fragment-id]').first().getAttribute('data-fragment-id');
+  const fragmentSuffix = firstContentId?.split('::').pop();
+  expect(fragmentSuffix).toBeTruthy();
+  await expect(page.locator(`.waveform-scroll [part~="region"][part*="${fragmentSuffix}"]`)).toBeVisible();
+});
+
 test('HTML editor opens', async ({ page }) => {
   await loadEPUB(page);
 
@@ -44,4 +76,193 @@ test('EPUB exports as a download', async ({ page }) => {
   await page.getByRole('button', { name: 'Export EPUB' }).click();
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toBe('exported.epub');
+});
+
+test('clicking a fragment selects it and shows its timing', async ({ page }) => {
+  await loadEPUB(page);
+
+  const firstFragment = page.locator('[data-fragment-id]').first();
+  await expect(firstFragment).toBeVisible();
+  await firstFragment.click();
+
+  await expect(firstFragment).toHaveClass(/bg-blue-500\/25/);
+  await expect(page.getByText('Start Time').locator('..').locator('input')).toHaveValue('0:00.270');
+  await expect(page.getByText('End Time').locator('..').locator('input')).toHaveValue('0:04.266');
+});
+
+test('cut tool splits a fragment at a word boundary', async ({ page }) => {
+  await loadEPUB(page);
+
+  const before = await currentFragmentCount(page);
+  await expect(page.locator('[data-fragment-id]').first()).toBeVisible();
+
+  await page.getByTitle(/Activate Cut Tool/).click();
+  await page.locator('[data-fragment-id]').first().click();
+
+  await expect(fragmentCountText(page)).toHaveText(`${before + 1} fragments total`);
+  await expect(page.locator('[data-fragment-id$="_part1"]').first()).toBeVisible();
+  await expect(page.locator('[data-fragment-id$="_part2"]').first()).toBeVisible();
+});
+
+test('editing fragment timing applies to the fragment', async ({ page }) => {
+  await loadEPUB(page);
+
+  await page.locator('[data-fragment-id]').first().click();
+  const endTimeInput = page.getByText('End Time').locator('..').locator('input');
+  await expect(endTimeInput).toHaveValue('0:04.266');
+
+  await endTimeInput.fill('0:05.000');
+  await page.getByRole('button', { name: 'Apply', exact: true }).click();
+  await expect(endTimeInput).toHaveValue('0:05.000');
+});
+
+test('deleting a fragment removes it from content and waveform', async ({ page }) => {
+  await loadEPUB(page);
+
+  const before = await currentFragmentCount(page);
+  const firstFragment = page.locator('[data-fragment-id]').first();
+  const firstId = await firstFragment.getAttribute('data-fragment-id');
+  const fragmentSuffix = firstId?.split('::').pop();
+  await firstFragment.click();
+  await page.getByTitle('Delete fragment').click();
+
+  await expect(fragmentCountText(page)).toHaveText(`${before - 1} fragments total`);
+  await expect(page.locator(`[data-fragment-id="${firstId}"]`)).toHaveCount(0);
+  await expect(page.locator(`.waveform-scroll [part~="region"][part*="${fragmentSuffix}"]`)).toHaveCount(0);
+});
+
+test('spacebar toggles audio playback', async ({ page }) => {
+  await loadEPUB(page);
+  await expect(page.getByRole('button', { name: 'Export EPUB' })).toBeVisible();
+
+  await page.keyboard.press('Space');
+  await expect(page.getByTitle('Pause (Space)')).toBeVisible({ timeout: 5000 });
+
+  await page.keyboard.press('Space');
+  await expect(page.getByTitle('Play (Space)')).toBeVisible();
+});
+
+test('exported EPUB contains the edited timing in the SMIL', async ({ page }) => {
+  await loadEPUB(page);
+
+  await page.locator('[data-fragment-id]').first().click();
+  const endTimeInput = page.getByText('End Time').locator('..').locator('input');
+  await endTimeInput.fill('0:05.000');
+  await page.getByRole('button', { name: 'Apply', exact: true }).click();
+  await expect(endTimeInput).toHaveValue('0:05.000');
+
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Export EPUB' }).click();
+  const download = await downloadPromise;
+  const filePath = await download.path();
+  expect(filePath).toBeTruthy();
+
+  const zip = await JSZip.loadAsync(await readFile(filePath!));
+  const smilFile = zip.file('OEBPS/MediaOverlays/Kapitel01.smil');
+  expect(smilFile).toBeTruthy();
+  const smil = await smilFile!.async('string');
+  expect(smil).toContain('clipBegin="0.270s" clipEnd="5.000s"');
+
+  const opfFile = zip.file('OEBPS/content.opf');
+  expect(opfFile).toBeTruthy();
+  const opf = await opfFile!.async('string');
+  expect(opf).toContain('property="media:duration"');
+});
+
+test('dragging a region boundary updates timings and keeps neighbours snapped', async ({ page }) => {
+  await loadEPUB(page);
+
+  const regions = page.locator('.waveform-scroll [part~="region"]');
+  await expect(regions.first()).toBeVisible({ timeout: 10000 });
+
+  const firstRegion = regions.nth(0);
+  const secondRegion = regions.nth(1);
+  const before = await regionStyle(firstRegion);
+  expect(await gapBetweenRegions(firstRegion, secondRegion)).toBeLessThan(1);
+
+  const handle = firstRegion.locator('[part~="region-handle-right"]');
+  await expect(handle).toBeVisible();
+  const box = await handle.boundingBox();
+  expect(box).toBeTruthy();
+  await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box!.x + box!.width / 2 - 40, box!.y + box!.height / 2, { steps: 10 });
+  await page.mouse.up();
+
+  await expect.poll(() => gapBetweenRegions(firstRegion, secondRegion)).toBeLessThan(1);
+  const after = await regionStyle(firstRegion);
+  expect(after.right).toBeGreaterThan(before.right + 0.25);
+});
+
+test('force align rewrites fragments to continuous coverage', async ({ page }) => {
+  await loadEPUB(page);
+
+  const regions = page.locator('.waveform-scroll [part~="region"]');
+  await expect(regions.first()).toBeVisible({ timeout: 10000 });
+
+  const firstRegion = regions.nth(0);
+  const secondRegion = regions.nth(1);
+  expect((await regionStyle(firstRegion)).left).toBeGreaterThan(0.01);
+
+  await page.getByTitle('Force non-overlapping segments').click();
+  await page.getByRole('button', { name: 'Force Align' }).click();
+
+  await expect.poll(() => regionStyle(firstRegion).then((s) => s.left)).toBeLessThan(0.01);
+  await expect.poll(() => gapBetweenRegions(firstRegion, secondRegion)).toBeLessThan(1);
+});
+
+test('applying a time offset shifts subsequent fragments', async ({ page }) => {
+  await loadEPUB(page);
+
+  const regions = page.locator('.waveform-scroll [part~="region"]');
+  await expect(regions.first()).toBeVisible({ timeout: 10000 });
+
+  const firstRegion = regions.nth(0);
+  const secondRegion = regions.nth(1);
+  const before = await regionStyle(firstRegion);
+  expect(await gapBetweenRegions(firstRegion, secondRegion)).toBeLessThan(1);
+
+  await page.getByTitle('Apply Time Offset').click();
+  await page.getByPlaceholder('1:23').fill('0:03');
+  await page.getByPlaceholder('-2.5 or +1.2').fill('2');
+  await page.getByRole('button', { name: 'Apply Offset' }).click();
+
+  await expect.poll(() => regionStyle(firstRegion).then((s) => s.right)).toBeLessThan(before.right - 0.2);
+  await expect.poll(() => gapBetweenRegions(firstRegion, secondRegion)).toBeLessThan(1);
+});
+
+test('HTML editor save applies changes and cancel discards them', async ({ page }) => {
+  await loadEPUB(page);
+
+  const codeButton = page.getByTitle('Edit HTML Source');
+  await codeButton.click();
+  const editor = page.locator('#html-editor');
+  await expect(editor).toBeVisible();
+
+  const html = await editor.inputValue();
+  await editor.fill(html.split('Twittern').join('Plaudern'));
+  await page.getByRole('button', { name: 'Save' }).click();
+
+  await expect(page.locator('#root')).toContainText('Plaudern');
+  await expect(page.locator('#root')).not.toContainText('Twittern');
+
+  await codeButton.click();
+  await editor.fill((await editor.inputValue()).split('Plaudern').join('Quatschen'));
+  await page.getByRole('button', { name: 'Cancel' }).click();
+
+  await expect(page.locator('#root')).toContainText('Plaudern');
+  await expect(page.locator('#root')).not.toContainText('Quatschen');
+});
+
+test('split at time divides a fragment into two', async ({ page }) => {
+  await loadEPUB(page);
+
+  const before = await currentFragmentCount(page);
+  await page.locator('[data-fragment-id]').first().click();
+
+  await page.getByPlaceholder('1:23.456').fill('0:02.000');
+  await page.getByTitle('Split at time').click();
+
+  await expect(fragmentCountText(page)).toHaveText(`${before + 1} fragments total`);
+  await expect(page.locator('[data-fragment-id$="_part1"]').first()).toBeVisible();
 });
