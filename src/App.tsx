@@ -110,62 +110,6 @@ const App: React.FC = () => {
     });
   }, []);
 
-  // Global hotkey for Spacebar and arrow keys
-  useEffect(() => {
-    const isInputField = (element: Element | null): boolean => {
-      if (!element) return false;
-      const tag = element.tagName;
-      return (
-        tag === 'INPUT' ||
-        tag === 'TEXTAREA' ||
-        tag === 'SELECT' ||
-        (element as HTMLElement).isContentEditable
-      );
-    };
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.code === 'F5' || ((event.ctrlKey || event.metaKey) && event.code === 'KeyR')) {
-        event.preventDefault();
-        setShowReloadWarning(true);
-        return;
-      }
-
-      if (isHtmlEditMode) return;
-
-      const active = document.activeElement;
-      const isRangeInput = active instanceof HTMLInputElement && active.type === 'range';
-      if (isInputField(active) && !isRangeInput) return;
-
-      if (event.code === 'KeyX') {
-        toggleCutToolSticky();
-        return;
-      }
-
-      if (event.code === 'Space') {
-        event.preventDefault(); // Prevent default spacebar behavior (e.g., scrolling, slider activation)
-        // Drop focus from a focused slider so it doesn't keep an ugly highlight
-        if (isRangeInput) (active as HTMLInputElement).blur();
-        if (waveformViewerRef.current) {
-          waveformViewerRef.current.togglePlayback();
-        }
-      } else if (event.code === 'ArrowLeft') {
-        if (isRangeInput) (active as HTMLInputElement).blur();
-        waveformViewerRef.current?.prevFragment();
-      } else if (event.code === 'ArrowRight') {
-        if (isRangeInput) (active as HTMLInputElement).blur();
-        waveformViewerRef.current?.nextFragment();
-      } else if (event.code === 'KeyR') {
-        waveformViewerRef.current?.replayFragment();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isHtmlEditMode, toggleCutToolSticky]);
-
   useEffect(() => {
     const handleResize = () => {
       setWaveformHeight((prev) => clampWaveformHeight(prev));
@@ -216,6 +160,68 @@ const App: React.FC = () => {
       setIsLoadingExport(false);
     }
   }, [exportEPUB]);
+
+  // Global hotkey for Spacebar, arrows, and other shortcuts
+  useEffect(() => {
+    const isInputField = (element: Element | null): boolean => {
+      if (!element) return false;
+      const tag = element.tagName;
+      return (
+        tag === 'INPUT' ||
+        tag === 'TEXTAREA' ||
+        tag === 'SELECT' ||
+        (element as HTMLElement).isContentEditable
+      );
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.code === 'F5' || ((event.ctrlKey || event.metaKey) && event.code === 'KeyR')) {
+        event.preventDefault();
+        setShowReloadWarning(true);
+        return;
+      }
+
+      if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
+        event.preventDefault();
+        if (!isLoadingExport) handleExportEPUB();
+        return;
+      }
+
+      if (isHtmlEditMode) return;
+
+      const active = document.activeElement;
+      const isRangeInput = active instanceof HTMLInputElement && active.type === 'range';
+      if (isInputField(active) && !isRangeInput) return;
+
+      if (event.code === 'KeyX') {
+        toggleCutToolSticky();
+        return;
+      }
+
+      if (event.code === 'Space') {
+        event.preventDefault(); // Prevent default spacebar behavior (e.g., scrolling, slider activation)
+        // Drop focus from a focused slider so it doesn't keep an ugly highlight
+        if (isRangeInput) (active as HTMLInputElement).blur();
+        if (waveformViewerRef.current) {
+          waveformViewerRef.current.togglePlayback();
+        }
+      } else if (event.code === 'ArrowLeft') {
+        if (isRangeInput) (active as HTMLInputElement).blur();
+        waveformViewerRef.current?.prevFragment();
+      } else if (event.code === 'ArrowRight') {
+        if (isRangeInput) (active as HTMLInputElement).blur();
+        waveformViewerRef.current?.nextFragment();
+      } else if (event.code === 'KeyR') {
+        waveformViewerRef.current?.replayFragment();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isHtmlEditMode, toggleCutToolSticky, handleExportEPUB, isLoadingExport]);
 
   const handleAutoFollowChange = useCallback((value: boolean) => {
     setAutoFollow(value);
@@ -352,6 +358,7 @@ const App: React.FC = () => {
             onClick={handleExportEPUB}
             disabled={isLoadingExport}
             className="ml-1"
+            title="Export EPUB (Ctrl+S)"
           >
             {isLoadingExport ? (
               <>

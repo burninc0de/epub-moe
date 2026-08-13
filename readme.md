@@ -128,6 +128,7 @@ npm run test:playwright
 - **Left / Right arrows**: Jump to previous / next fragment
 - **R**: Replay the current fragment from its start
 - **X**: Toggle cut tool sticky mode (same as double-clicking the scissors icon)
+- **Ctrl+S / Cmd+S**: Export the EPUB
 - **Ctrl / Cmd + scroll**: Zoom text in the content viewer (or HTML editor when open)
 - **Ctrl/Cmd + `0`**: Reset zoom to 100%
 - Zoom shortcuts also work while typing; playback, navigation, and cut-tool shortcuts are disabled while the HTML editor is active or when typing in a text field
