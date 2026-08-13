@@ -27,7 +27,6 @@ interface WaveformViewerProps {
   onFragmentUpdate: (fragmentId: string, updates: Partial<SMILFragment>) => void;
   onApplyTimeOffset: (fromTime: number, offsetSeconds: number) => void;
   onForceNonOverlapping: (audioDuration: number) => void;
-  viewerHeight: number;
   regionColorStyle?: RegionColorStyle;
 }
 
@@ -297,21 +296,12 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
 
     // Track drag state using region-update event
     const dragStartPositions: { [key: string]: { start: number, end: number } } = {};
-    let dragUpdateScheduled = false;
     regionsPluginRef.current.on('region-update', (region) => {
       if (!dragStartPositions[region.id]) {
         // Drag started
         dragStartPositions[region.id] = { start: region.start, end: region.end };
         setIsDragging(true);
         setDraggedRegionId(region.id);
-      }
-      // During drag, throttle visual updates using requestAnimationFrame
-      if (!dragUpdateScheduled) {
-        dragUpdateScheduled = true;
-        requestAnimationFrame(() => {
-          dragUpdateScheduled = false;
-          // Visual update could be added here if needed, but WaveSurfer handles it automatically
-        });
       }
     });
 
@@ -393,7 +383,6 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
     setIsWaveformLoading(true);
   }, [audioBlob]);
 
-  //const lastAutomaticallySelectedFragmentId = useRef<string | null>(null);
   const suppressAutoSelectUntil = useRef<number>(0); // Suppress auto-selection after manual click
 
   useEffect(() => {

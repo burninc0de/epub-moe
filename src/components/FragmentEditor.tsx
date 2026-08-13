@@ -5,7 +5,6 @@ import { formatTimeWithMs, parseTimeInput } from '../utils/time';
 import { Button, IconButton, PanelHeader, SectionLabel, FieldLabel, TextInput } from './ui';
 
 interface FragmentEditorProps {
-  fragments: SMILFragment[];
   selectedFragment: SMILFragment | null;
   onFragmentUpdate: (fragmentId: string, updates: Partial<SMILFragment>) => void;
   onFragmentDelete: (fragmentId: string) => void;
@@ -14,7 +13,6 @@ interface FragmentEditorProps {
 }
 
 export const FragmentEditor: React.FC<FragmentEditorProps> = ({
-  //fragments,
   selectedFragment,
   onFragmentUpdate,
   onFragmentDelete,

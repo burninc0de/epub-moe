@@ -474,7 +474,6 @@ const App: React.FC = () => {
             <Resizer onMouseDown={(e) => startResizing(e, 'horizontal', 'right')} />
             <div style={{ width: rightPanelWidth }} className="flex-shrink-0 h-full overflow-auto bg-panel">
               <FragmentEditor
-                fragments={fragments}
                 selectedFragment={selectedFragment}
                 onFragmentUpdate={updateFragment}
                 onFragmentDelete={deleteFragment}
@@ -500,7 +499,6 @@ const App: React.FC = () => {
               onFragmentUpdate={updateFragment}
               onApplyTimeOffset={applyTimeOffset}
               onForceNonOverlapping={(audioDuration) => forceNonOverlappingFragments(audioDuration)}
-              viewerHeight={waveformHeight}
               regionColorStyle={regionColorStyle}
             />
           </div>
