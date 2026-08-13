@@ -92,6 +92,19 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
     if (!isCutToolActive) setCutPreview(null);
   }, [isCutToolActive]);
 
+  useEffect(() => {
+    const handleScroll = (e: Event) => {
+      const target = e.target as Node;
+      const container = scrollContainerRef.current;
+      if (!container) return;
+      if (target === container || target.contains(container)) {
+        setCutPreview(null);
+      }
+    };
+    document.addEventListener('scroll', handleScroll, true);
+    return () => document.removeEventListener('scroll', handleScroll, true);
+  }, []);
+
   const getTextNodeAtIndex = useCallback((element: Element, index: number): { node: Node; offset: number } | null => {
     const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
     let currentIndex = 0;
@@ -516,11 +529,13 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
             />
             {cutPreviewPosition && (
               <div
-                className="fixed w-0.5 bg-orange-500 pointer-events-none z-50 -mt-[1px] ml-[1px]"
+                className="fixed w-0.5 bg-orange-500 pointer-events-none z-50"
                 style={{
                   left: `${cutPreviewPosition.x}px`,
                   top: `${cutPreviewPosition.y}px`,
                   height: `${cutPreviewPosition.height}px`,
+                  marginTop: `${-2 * fontScale}px`,
+                  marginLeft: `${fontScale}px`,
                   boxShadow: '0 0 8px rgba(239, 68, 68, 0.8)'
                 }}
               />
