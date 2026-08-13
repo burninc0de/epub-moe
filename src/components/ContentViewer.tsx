@@ -16,6 +16,8 @@ interface ContentViewerProps {  chapter: EPUBChapter | null;
   onFragmentSelect: (fragment: SMILFragment) => void;
   isCutToolActive: boolean;
   setIsCutToolActive: (isActive: boolean) => void;
+  isCutToolSticky: boolean;
+  setIsCutToolSticky: (isSticky: boolean) => void;
   onFragmentSplitByText: (fragmentId: string, splitIndex: number) => boolean;
   onHtmlUpdate?: (newHtml: string) => void;
   isHtmlEditMode: boolean;
@@ -34,6 +36,8 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
   onFragmentSelect,
   isCutToolActive,
   setIsCutToolActive,
+  isCutToolSticky,
+  setIsCutToolSticky,
   onFragmentSplitByText,
   onHtmlUpdate,
   isHtmlEditMode,
@@ -45,7 +49,6 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
   codeThemeId = null,
 }) => {
   const [editedHtml, setEditedHtml] = useState<string | null>(null);
-  const [isCutToolSticky, setIsCutToolSticky] = useState<boolean>(false);
   const [cutPreviewPosition, setCutPreviewPosition] = useState<{ x: number; y: number; height: number } | null>(null);
   const [splitNotice, setSplitNotice] = useState<string | null>(null);
   const [fontScale, setFontScale] = useState<number>(() => {
@@ -406,7 +409,7 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
               ? 'bg-orange-500/15 text-orange-400 hover:bg-orange-500/25'
               : 'bg-blue-500/15 text-blue-400 hover:bg-blue-500/25'
             }
-            title={isCutToolSticky ? 'Cut Tool (Sticky Mode) - Double-click to disable' : isCutToolActive ? 'Deactivate Cut Tool - Double-click for sticky mode' : 'Activate Cut Tool - Double-click for sticky mode'}
+            title={isCutToolSticky ? 'Cut Tool (Sticky Mode) - Double-click or Ctrl+S to disable' : isCutToolActive ? 'Deactivate Cut Tool - Double-click or Ctrl+S for sticky mode' : 'Activate Cut Tool - Double-click or Ctrl+S for sticky mode'}
           >
             <Scissors className="w-4 h-4" />
           </IconButton>

@@ -102,7 +102,7 @@ npm run test:playwright
 
 - **Scissors icon (Cut Tool)**: Split text fragments at desired points with intelligent word-boundary snapping
   - **Single click**: Activate/deactivate the cut tool
-  - **Double-click**: Toggle sticky mode (keeps tool active for multiple cuts)
+  - **Double-click or Ctrl+S / Cmd+S**: Toggle sticky mode (keeps tool active for multiple cuts)
   - **Color states**: Gray (inactive), Blue (single-use), Orange (sticky mode)
   - **Smart splitting**: Automatically snaps to nearest word boundary (spaces/hyphens) to prevent mid-word cuts
   - When you split a text fragment, the corresponding audio is automatically split as well
@@ -121,6 +121,13 @@ npm run test:playwright
   - Text fragment order is treated as the single source of truth
   - Timings are rewritten to create continuous coverage from start to end of the audio
   - No overlaps and no gaps remain after force align
+
+### Keyboard Shortcuts
+
+- **Spacebar**: Toggle audio playback
+- **Left / Right arrows**: Jump to previous / next fragment
+- **Ctrl+S / Cmd+S**: Toggle cut tool sticky mode (same as double-clicking the scissors icon)
+- Shortcuts are disabled while the HTML editor is active or when typing in a text field
 
 ## Screenshots
 

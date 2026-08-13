@@ -39,6 +39,7 @@ const App: React.FC = () => {
     return stored ? clampWaveformHeight(parseInt(stored, 10)) : clampWaveformHeight(245);
   });
   const [isCutToolActive, setIsCutToolActive] = useState(false);
+  const [isCutToolSticky, setIsCutToolSticky] = useState(false);
   const [isHtmlEditMode, setIsHtmlEditMode] = useState(false);
   const [isBlockDisplay, setIsBlockDisplay] = useState(true);
   const [isLoadingExport, setIsLoadingExport] = useState(false);
@@ -96,6 +97,18 @@ const App: React.FC = () => {
 
   const waveformViewerRef = useRef<WaveformViewerHandles>(null);
 
+  const toggleCutToolSticky = useCallback(() => {
+    setIsCutToolSticky((prev) => {
+      const next = !prev;
+      if (next) {
+        setIsCutToolActive(true);
+      } else {
+        setIsCutToolActive(false);
+      }
+      return next;
+    });
+  }, []);
+
   // Global hotkey for Spacebar and arrow keys
   useEffect(() => {
     const isInputField = (element: Element | null): boolean => {
@@ -111,6 +124,12 @@ const App: React.FC = () => {
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (isHtmlEditMode) return;
+
+      if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
+        event.preventDefault();
+        toggleCutToolSticky();
+        return;
+      }
 
       const active = document.activeElement;
       const isRangeInput = active instanceof HTMLInputElement && active.type === 'range';
@@ -137,7 +156,7 @@ const App: React.FC = () => {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isHtmlEditMode]);
+  }, [isHtmlEditMode, toggleCutToolSticky]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -396,6 +415,8 @@ const App: React.FC = () => {
               }}
               isCutToolActive={isCutToolActive}
               setIsCutToolActive={setIsCutToolActive}
+              isCutToolSticky={isCutToolSticky}
+              setIsCutToolSticky={setIsCutToolSticky}
               onFragmentSplitByText={splitFragmentByText}
               onHtmlUpdate={(newHtml: string) => {
                 if (!currentChapter) return;
