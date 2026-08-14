@@ -547,7 +547,7 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
     // Suppress auto-selection if user just clicked a region
     if (Date.now() < suppressAutoSelectUntil.current) return;
     let foundFragment: SMILFragment | null = null;
-    for (const fragment of fragments) {
+    for (const fragment of fragmentsRef.current) {
       if (
         currentTime > fragment.clipBegin - REGION_EPSILON &&
         currentTime < fragment.clipEnd - REGION_EPSILON
@@ -563,7 +563,7 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
       onFragmentSelectRef.current(null);
       highlightFragmentRegion(null);
     }
-  }, [currentTime, fragments, highlightFragmentRegion]);
+  }, [currentTime, highlightFragmentRegion]);
 
   return (
     <div className="h-full flex flex-col bg-panel">
