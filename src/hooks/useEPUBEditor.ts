@@ -146,6 +146,41 @@ export const useEPUBEditor = () => {
     }
   }, [epubData, selectedChapter, selectedFragment]);
 
+  const nudgeFragmentEnd = useCallback((fragmentId: string, deltaSeconds: number) => {
+    if (!epubData || !selectedChapter) return;
+
+    const chapterData = getChapterFragments(epubData, selectedChapter);
+    if (!chapterData) return;
+
+    const { smilId, fragments } = chapterData;
+    const fragmentIndex = fragments.findIndex(f => f.id === fragmentId);
+    if (fragmentIndex === -1) return;
+
+    const fragment = fragments[fragmentIndex];
+    const newEnd = Math.max(fragment.clipBegin + 0.01, fragment.clipEnd + deltaSeconds);
+    if (newEnd === fragment.clipEnd) return;
+
+    const updatedFragments = [...fragments];
+    updatedFragments[fragmentIndex] = { ...fragment, clipEnd: newEnd };
+
+    // Keep the next fragment's start contiguous (start of next = end of current)
+    if (fragmentIndex < updatedFragments.length - 1) {
+      updatedFragments[fragmentIndex + 1] = {
+        ...updatedFragments[fragmentIndex + 1],
+        clipBegin: newEnd,
+      };
+    }
+
+    const newSmilFiles = new Map(epubData.smilFiles);
+    newSmilFiles.set(smilId, normalizeOrder(updatedFragments));
+
+    setEpubData({ ...epubData, smilFiles: newSmilFiles });
+
+    if (selectedFragment?.id === fragmentId) {
+      setSelectedFragment({ ...selectedFragment, clipEnd: newEnd });
+    }
+  }, [epubData, selectedChapter, selectedFragment]);
+
   const deleteFragment = useCallback((fragmentId: string) => {
     if (!epubData || !selectedChapter) return;
 
@@ -705,6 +740,7 @@ export const useEPUBEditor = () => {
     splitFragmentByText,
     addFragment,
     nudgeFragmentStart,
+    nudgeFragmentEnd,
     applyTimeOffset,
     forceNonOverlappingFragments,
     getCurrentChapter,
