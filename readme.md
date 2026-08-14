@@ -137,7 +137,7 @@ npm run test:playwright
 - **Ctrl+S / Cmd+S**: Export the EPUB
 - **Ctrl / Cmd + scroll**: Zoom text in the content viewer (or HTML editor when open)
 - **Ctrl/Cmd + `0`**: Reset zoom to 100%
-- Zoom shortcuts also work while typing; playback, navigation, and cut-tool shortcuts are disabled while the HTML editor is active or when typing in a text field
+- Zoom shortcuts also work while typing; playback, navigation, and cut-tool shortcuts are disabled only while focus is in the HTML editor or a text field, so they stay usable elsewhere during HTML edit mode
 
 ## Additional Screenshots
 

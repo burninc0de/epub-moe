@@ -200,8 +200,6 @@ const App: React.FC = () => {
         return;
       }
 
-      if (isHtmlEditMode) return;
-
       const active = document.activeElement;
       const isRangeInput = active instanceof HTMLInputElement && active.type === 'range';
       if (isInputField(active) && !isRangeInput) return;
@@ -258,7 +256,7 @@ const App: React.FC = () => {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isHtmlEditMode, toggleCutToolSticky, handleExportEPUB, isLoadingExport, nudgeFragmentStart, nudgeFragmentEnd, nudgeStep, selectedFragment]);
+  }, [toggleCutToolSticky, handleExportEPUB, isLoadingExport, nudgeFragmentStart, nudgeFragmentEnd, nudgeStep, selectedFragment]);
 
   const handleAutoFollowChange = useCallback((value: boolean) => {
     setAutoFollow(value);

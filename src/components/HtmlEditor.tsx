@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import EditorModule from 'react-simple-code-editor';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-markup';
@@ -20,6 +20,22 @@ const HtmlEditor = ({ value, onValueChange, codeThemeId }: HtmlEditorProps) => {
   const themeCss = getCodeThemeCss(codeThemeId);
   const containerRef = useRef<HTMLDivElement>(null);
   const { fontScale } = useZoomWheel(containerRef, CODE_FONT_SCALE_KEY);
+
+  // Clicking outside the editor (e.g. the waveform) doesn't move focus off
+  // the textarea, which would keep global playback/navigation hotkeys blocked.
+  // Blur it explicitly so those shortcuts work once the user interacts elsewhere.
+  useEffect(() => {
+    const onPointerDown = (e: PointerEvent) => {
+      const container = containerRef.current;
+      if (!container || container.contains(e.target as Node)) return;
+      const active = document.activeElement;
+      if (active instanceof HTMLElement && container.contains(active)) {
+        active.blur();
+      }
+    };
+    window.addEventListener('pointerdown', onPointerDown, true);
+    return () => window.removeEventListener('pointerdown', onPointerDown, true);
+  }, []);
 
   return (
     <div ref={containerRef}>
