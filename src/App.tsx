@@ -80,7 +80,7 @@ const App: React.FC = () => {
         if (side === 'left') {
           setLeftPanelWidth(Math.max(100, event.clientX));
         } else { // right
-          setRightPanelWidth(Math.max(100, window.innerWidth - event.clientX));
+          setRightPanelWidth(Math.max(225, window.innerWidth - event.clientX));
         }
       } else { // vertical
         const newHeight = clampWaveformHeight(window.innerHeight - event.clientY);
