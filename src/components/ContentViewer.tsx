@@ -548,17 +548,16 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
 
       {fragments.length > 0 && showStatusBar && (
         <div className="h-7 flex-shrink-0 border-t border-line px-3 flex items-center gap-1.5 text-xs text-gray-500 bg-panel">
-          <List className="w-3.5 h-3.5" />
-          <span>{fragments.length} fragments total</span>
           {selectedFragment && (
             <>
-              <span className="text-gray-700">|</span>
               <Code className="w-3.5 h-3.5" />
-              <span className="text-gray-500">
-                {selectedFragment.id.split('::')[1] ?? selectedFragment.id}
-              </span>
+              <span>{selectedFragment.id.split('::')[1] ?? selectedFragment.id}</span>
             </>
           )}
+          <span className="ml-auto flex items-center gap-1.5">
+            <List className="w-3.5 h-3.5" />
+            <span>{fragments.length} fragments total</span>
+          </span>
         </div>
       )}
     </div>
