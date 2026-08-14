@@ -67,13 +67,13 @@ const App: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const startResizing = useCallback((
-    e: React.MouseEvent,
+    e: React.PointerEvent,
     direction: 'horizontal' | 'vertical',
     side: 'left' | 'right' | 'bottom'
   ) => {
     e.preventDefault();
 
-    const handleMouseMove = (event: MouseEvent) => {
+    const handlePointerMove = (event: PointerEvent) => {
       if (direction === 'horizontal') {
         if (side === 'left') {
           setLeftPanelWidth(Math.max(100, event.clientX));
@@ -87,13 +87,13 @@ const App: React.FC = () => {
       }
     };
 
-    const handleMouseUp = () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
+    const handlePointerUp = () => {
+      document.removeEventListener('pointermove', handlePointerMove);
+      document.removeEventListener('pointerup', handlePointerUp);
     };
 
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('pointermove', handlePointerMove);
+    document.addEventListener('pointerup', handlePointerUp);
   }, []);
 
   const waveformViewerRef = useRef<WaveformViewerHandles>(null);
@@ -424,7 +424,7 @@ const App: React.FC = () => {
               />
             </div>
 
-            <Resizer onMouseDown={(e) => startResizing(e, 'horizontal', 'left')} />
+            <Resizer onPointerDown={(e) => startResizing(e, 'horizontal', 'left')} />
           </>
         )}
 
@@ -469,7 +469,7 @@ const App: React.FC = () => {
 
         {!isRightPanelCollapsed && (
           <>
-            <Resizer onMouseDown={(e) => startResizing(e, 'horizontal', 'right')} />
+            <Resizer onPointerDown={(e) => startResizing(e, 'horizontal', 'right')} />
             <div style={{ width: rightPanelWidth }} className="flex-shrink-0 h-full overflow-auto bg-panel">
               <FragmentEditor
                 selectedFragment={selectedFragment}
@@ -486,7 +486,7 @@ const App: React.FC = () => {
       {/* Resizer and Bottom section */}
       {audioBlob && (
         <>
-          <Resizer onMouseDown={(e) => startResizing(e, 'vertical', 'bottom')} direction="vertical" />
+          <Resizer onPointerDown={(e) => startResizing(e, 'vertical', 'bottom')} direction="vertical" />
           <div style={{ height: waveformHeight }} className="w-full flex-shrink-0">
             <WaveformViewer
               ref={waveformViewerRef} // Attach the ref to WaveformViewer
