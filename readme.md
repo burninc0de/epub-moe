@@ -134,13 +134,10 @@ npm run test:playwright
 - **Ctrl/Cmd + `0`**: Reset zoom to 100%
 - Zoom shortcuts also work while typing; playback, navigation, and cut-tool shortcuts are disabled while the HTML editor is active or when typing in a text field
 
-## Screenshots
+## Additional Screenshots
 
-### Upload Screen
-![Upload Interface](screenshots/upload.png)
-
-### Main Workspace
-![Four Panel Layout](screenshots/main-workspace.png)
+### Settings
+![Upload Interface](screenshots/settings.png)
 
 ### HTML Editor
 ![Inline Editing](screenshots/html-editor.png)
