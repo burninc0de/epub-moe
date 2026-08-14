@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useLayoutEffect, useCallback, lazy, Suspense } from 'react';
 import './ContentViewer.css';
-import { Scissors, AlignJustify, Text, Code } from 'lucide-react';
+import { Scissors, AlignJustify, Text, Code, List } from 'lucide-react';
 import { EPUBChapter, SMILFragment, FragmentSpacing, FRAGMENT_SPACING_CLASSES } from '../types/epub';
 import { Button, IconButton } from './ui';
 import { useZoomWheel, MIN_FONT_SCALE, MAX_FONT_SCALE } from '../hooks/useZoomWheel';
@@ -26,6 +26,7 @@ interface ContentViewerProps {  chapter: EPUBChapter | null;
   autoFollow?: boolean;
   fragmentSpacing: FragmentSpacing;
   codeThemeId?: string | null;
+  showStatusBar?: boolean;
 }
 
 export const ContentViewer: React.FC<ContentViewerProps> = ({
@@ -46,6 +47,7 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
   autoFollow = true,
   fragmentSpacing,
   codeThemeId = null,
+  showStatusBar = true,
 }) => {
   const [editedHtml, setEditedHtml] = useState<string | null>(null);
   const [cutPreview, setCutPreview] = useState<{ fragmentId: string; splitIndex: number } | null>(null);
@@ -544,9 +546,10 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
         )}
       </div>
 
-      {fragments.length > 0 && (
-        <div className="h-7 flex-shrink-0 px-3 flex items-center text-xs text-gray-500">
-          <span className="ml-auto">{fragments.length} fragments total</span>
+      {fragments.length > 0 && showStatusBar && (
+        <div className="h-7 flex-shrink-0 border-t border-line px-3 flex items-center gap-1.5 text-xs text-gray-500 bg-panel">
+          <List className="w-3.5 h-3.5" />
+          <span>{fragments.length} fragments total</span>
         </div>
       )}
     </div>

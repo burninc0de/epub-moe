@@ -23,6 +23,7 @@ const LEFT_PANEL_COLLAPSED_KEY = 'leftPanelCollapsed';
 const RIGHT_PANEL_COLLAPSED_KEY = 'rightPanelCollapsed';
 const CODE_THEME_KEY = 'codeTheme';
 const REGION_COLOR_STYLE_KEY = 'regionColorStyle';
+const STATUS_BAR_KEY = 'statusBar';
 const MIN_WAVEFORM_HEIGHT = 192;
 const MIN_TOP_SECTION_HEIGHT = 100;
 const RESIZER_HEIGHT = 8;
@@ -61,6 +62,7 @@ const App: React.FC = () => {
     const stored = localStorage.getItem(REGION_COLOR_STYLE_KEY);
     return stored === 'classic' ? 'classic' : 'modern';
   });
+  const [showStatusBar, setShowStatusBar] = useState(() => localStorage.getItem(STATUS_BAR_KEY) !== 'false');
   const savedRightPanelWidth = useRef(rightPanelWidth);
   const savedLeftPanelWidth = useRef(leftPanelWidth);
 
@@ -259,6 +261,11 @@ const App: React.FC = () => {
   const handleRegionColorStyleChange = useCallback((value: RegionColorStyle) => {
     setRegionColorStyle(value);
     localStorage.setItem(REGION_COLOR_STYLE_KEY, value);
+  }, []);
+
+  const handleShowStatusBarChange = useCallback((value: boolean) => {
+    setShowStatusBar(value);
+    localStorage.setItem(STATUS_BAR_KEY, String(value));
   }, []);
 
   useEffect(() => {
@@ -464,6 +471,7 @@ const App: React.FC = () => {
               autoFollow={autoFollow}
               fragmentSpacing={fragmentSpacing}
               codeThemeId={codeThemeId}
+              showStatusBar={showStatusBar}
             />
         </div>
 
@@ -516,6 +524,8 @@ const App: React.FC = () => {
             onCodeThemeChange={handleCodeThemeChange}
             regionColorStyle={regionColorStyle}
             onRegionColorStyleChange={handleRegionColorStyleChange}
+            showStatusBar={showStatusBar}
+            onShowStatusBarChange={handleShowStatusBarChange}
           />
         </Modal>
       )}

@@ -17,6 +17,8 @@ interface SettingsPanelProps {
   onCodeThemeChange: (value: string) => void;
   regionColorStyle: RegionColorStyle;
   onRegionColorStyleChange: (value: RegionColorStyle) => void;
+  showStatusBar: boolean;
+  onShowStatusBarChange: (value: boolean) => void;
 }
 
 const Switch: React.FC<{ checked: boolean; onChange: () => void; title: string }> = ({ checked, onChange, title }) => (
@@ -48,6 +50,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   onCodeThemeChange,
   regionColorStyle,
   onRegionColorStyleChange,
+  showStatusBar,
+  onShowStatusBarChange,
 }) => {
   return (
     <div>
@@ -70,6 +74,16 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
             </p>
           </div>
           <Switch checked={onlyAudioChapters} onChange={() => onOnlyAudioChaptersChange(!onlyAudioChapters)} title="Toggle audio-only chapters" />
+        </div>
+
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h3 className="text-sm font-medium text-gray-100">Show status bar</h3>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Show the fragment count bar at the bottom of the text viewer.
+            </p>
+          </div>
+          <Switch checked={showStatusBar} onChange={() => onShowStatusBarChange(!showStatusBar)} title="Toggle status bar" />
         </div>
 
         <div>
