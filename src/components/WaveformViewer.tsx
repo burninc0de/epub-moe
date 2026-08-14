@@ -567,7 +567,7 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
 
   return (
     <div className="h-full flex flex-col bg-panel">
-      <div className="h-11 flex-shrink-0 flex items-center justify-between gap-2 px-3 border-b border-line">
+      <div className="h-11 flex-shrink-0 flex items-center justify-between gap-2 px-3 border-t border-b border-line">
         <div className="flex items-center gap-2">
           <IconButton
             onClick={toggleMute}

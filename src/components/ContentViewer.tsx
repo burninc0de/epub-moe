@@ -545,7 +545,7 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
       </div>
 
       {fragments.length > 0 && (
-        <div className="h-7 flex-shrink-0 border-t border-line px-3 flex items-center text-xs text-gray-500">
+        <div className="h-7 flex-shrink-0 px-3 flex items-center text-xs text-gray-500">
           <span className="ml-auto">{fragments.length} fragments total</span>
         </div>
       )}
