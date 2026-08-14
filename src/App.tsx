@@ -24,6 +24,10 @@ const RIGHT_PANEL_COLLAPSED_KEY = 'rightPanelCollapsed';
 const CODE_THEME_KEY = 'codeTheme';
 const REGION_COLOR_STYLE_KEY = 'regionColorStyle';
 const STATUS_BAR_KEY = 'statusBar';
+const NUDGE_STEP_KEY = 'nudgeStep';
+const MIN_NUDGE_STEP = 0.005;
+const MAX_NUDGE_STEP = 5;
+const DEFAULT_NUDGE_STEP = 0.05;
 const MIN_WAVEFORM_HEIGHT = 192;
 const MIN_TOP_SECTION_HEIGHT = 100;
 const RESIZER_HEIGHT = 8;
@@ -63,6 +67,11 @@ const App: React.FC = () => {
     return stored === 'classic' ? 'classic' : 'modern';
   });
   const [showStatusBar, setShowStatusBar] = useState(() => localStorage.getItem(STATUS_BAR_KEY) !== 'false');
+  const [nudgeStep, setNudgeStep] = useState(() => {
+    const stored = parseFloat(localStorage.getItem(NUDGE_STEP_KEY) ?? '');
+    if (!Number.isFinite(stored)) return DEFAULT_NUDGE_STEP;
+    return Math.min(MAX_NUDGE_STEP, Math.max(MIN_NUDGE_STEP, stored));
+  });
   const savedRightPanelWidth = useRef(rightPanelWidth);
   const savedLeftPanelWidth = useRef(leftPanelWidth);
 
@@ -213,13 +222,13 @@ const App: React.FC = () => {
         if (event.ctrlKey && event.shiftKey) {
           event.preventDefault();
           if (isRangeInput) (active as HTMLInputElement).blur();
-          if (selectedFragment) nudgeFragmentEnd(selectedFragment.id, -0.05);
+          if (selectedFragment) nudgeFragmentEnd(selectedFragment.id, -nudgeStep);
           return;
         }
         if (event.ctrlKey || event.metaKey) {
           event.preventDefault();
           if (isRangeInput) (active as HTMLInputElement).blur();
-          if (selectedFragment) nudgeFragmentStart(selectedFragment.id, -0.05);
+          if (selectedFragment) nudgeFragmentStart(selectedFragment.id, -nudgeStep);
           return;
         }
         if (isRangeInput) (active as HTMLInputElement).blur();
@@ -228,13 +237,13 @@ const App: React.FC = () => {
         if (event.ctrlKey && event.shiftKey) {
           event.preventDefault();
           if (isRangeInput) (active as HTMLInputElement).blur();
-          if (selectedFragment) nudgeFragmentEnd(selectedFragment.id, 0.05);
+          if (selectedFragment) nudgeFragmentEnd(selectedFragment.id, nudgeStep);
           return;
         }
         if (event.ctrlKey || event.metaKey) {
           event.preventDefault();
           if (isRangeInput) (active as HTMLInputElement).blur();
-          if (selectedFragment) nudgeFragmentStart(selectedFragment.id, 0.05);
+          if (selectedFragment) nudgeFragmentStart(selectedFragment.id, nudgeStep);
           return;
         }
         if (isRangeInput) (active as HTMLInputElement).blur();
@@ -249,7 +258,7 @@ const App: React.FC = () => {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isHtmlEditMode, toggleCutToolSticky, handleExportEPUB, isLoadingExport, nudgeFragmentStart, nudgeFragmentEnd, selectedFragment]);
+  }, [isHtmlEditMode, toggleCutToolSticky, handleExportEPUB, isLoadingExport, nudgeFragmentStart, nudgeFragmentEnd, nudgeStep, selectedFragment]);
 
   const handleAutoFollowChange = useCallback((value: boolean) => {
     setAutoFollow(value);
@@ -279,6 +288,12 @@ const App: React.FC = () => {
   const handleShowStatusBarChange = useCallback((value: boolean) => {
     setShowStatusBar(value);
     localStorage.setItem(STATUS_BAR_KEY, String(value));
+  }, []);
+
+  const handleNudgeStepChange = useCallback((value: number) => {
+    const clamped = Math.min(MAX_NUDGE_STEP, Math.max(MIN_NUDGE_STEP, value));
+    setNudgeStep(clamped);
+    localStorage.setItem(NUDGE_STEP_KEY, String(clamped));
   }, []);
 
   useEffect(() => {
@@ -539,6 +554,9 @@ const App: React.FC = () => {
             onRegionColorStyleChange={handleRegionColorStyleChange}
             showStatusBar={showStatusBar}
             onShowStatusBarChange={handleShowStatusBarChange}
+            nudgeStep={nudgeStep}
+            onNudgeStepChange={handleNudgeStepChange}
+            defaultNudgeStep={DEFAULT_NUDGE_STEP}
           />
         </Modal>
       )}

@@ -4,7 +4,7 @@ import { version } from '../../package.json';
 import { FragmentSpacing, FRAGMENT_SPACING_OPTIONS } from '../types/epub';
 import { CODE_THEMES } from '../utils/codeThemes';
 import { RegionColorStyle } from './WaveformViewer';
-import { Select } from './ui';
+import { Button, Select, TextInput } from './ui';
 
 interface SettingsPanelProps {
   autoFollow: boolean;
@@ -19,6 +19,9 @@ interface SettingsPanelProps {
   onRegionColorStyleChange: (value: RegionColorStyle) => void;
   showStatusBar: boolean;
   onShowStatusBarChange: (value: boolean) => void;
+  nudgeStep: number;
+  onNudgeStepChange: (value: number) => void;
+  defaultNudgeStep: number;
 }
 
 const Switch: React.FC<{ checked: boolean; onChange: () => void; title: string }> = ({ checked, onChange, title }) => (
@@ -52,6 +55,9 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   onRegionColorStyleChange,
   showStatusBar,
   onShowStatusBarChange,
+  nudgeStep,
+  onNudgeStepChange,
+  defaultNudgeStep,
 }) => {
   return (
     <div>
@@ -84,6 +90,31 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
             </p>
           </div>
           <Switch checked={showStatusBar} onChange={() => onShowStatusBarChange(!showStatusBar)} title="Toggle status bar" />
+        </div>
+
+        <div>
+          <h3 className="text-sm font-medium text-gray-100">Nudge step</h3>
+          <p className="text-xs text-gray-500 mt-0.5 mb-2">
+            Amount (ms) applied per press of Ctrl/Cmd+arrows (start) or Ctrl/Cmd+Shift+arrows (end).
+          </p>
+          <div className="flex items-center gap-2">
+            <TextInput
+              type="number"
+              min={5}
+              max={5000}
+              step={5}
+              value={Math.round(nudgeStep * 1000)}
+              onChange={(e) => {
+                const ms = parseFloat(e.target.value);
+                if (Number.isFinite(ms)) onNudgeStepChange(ms / 1000);
+              }}
+              className="w-28 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            />
+            <span className="text-xs text-gray-500">ms</span>
+            <Button size="sm" variant="ghost" onClick={() => onNudgeStepChange(defaultNudgeStep)} disabled={nudgeStep === defaultNudgeStep}>
+              Reset
+            </Button>
+          </div>
         </div>
 
         <div>

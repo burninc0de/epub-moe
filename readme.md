@@ -126,8 +126,9 @@ npm run test:playwright
 
 - **Spacebar**: Toggle audio playback
 - **Left / Right arrows**: Jump to previous / next fragment
-- **Ctrl / Cmd + Left / Right arrows**: Nudge the current fragment's start time by 50ms (left = earlier, right = later; the previous fragment's end follows so the timeline stays contiguous)
-- **Ctrl / Cmd + Shift + Left / Right arrows**: Nudge the current fragment's end time by 50ms (left = earlier, right = later; the next fragment's start follows so the timeline stays contiguous)
+- **Ctrl / Cmd + Left / Right arrows**: Nudge the current fragment's start time by the configured nudge step, 50ms by default (left = earlier, right = later; the previous fragment's end follows so the timeline stays contiguous)
+- **Ctrl / Cmd + Shift + Left / Right arrows**: Nudge the current fragment's end time by the configured nudge step (left = earlier, right = later; the next fragment's start follows so the timeline stays contiguous)
+- The nudge step is adjustable in Settings (5–5000ms)
 - **R**: Replay the current fragment from its start
 - **X**: Toggle cut tool sticky mode (same as double-clicking the scissors icon)
 - **Ctrl+S / Cmd+S**: Export the EPUB
