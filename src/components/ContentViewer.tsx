@@ -401,7 +401,7 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
   return (
     <div className="content-viewer flex-1 min-h-0 bg-base flex flex-col">
       <div className="h-11 flex-shrink-0 px-3 border-b border-line flex justify-between items-center gap-2 sticky top-0 z-10 bg-panel">
-        <p className="text-xs text-gray-500 font-mono truncate">{chapter.href}</p>
+        <p className="text-xs text-gray-500 truncate">{chapter.href}</p>
         <div className="flex items-center gap-1 flex-shrink-0">
           <IconButton
             onClick={() => setIsCutToolActive(!isCutToolActive)}
