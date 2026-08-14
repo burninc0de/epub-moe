@@ -98,6 +98,9 @@ npm run test:playwright
 4. **Edit if needed**: Use the HTML editor for quick text adjustments  
 5. **Export**: Download the updated EPUB with your changes
 
+> [!NOTE]
+> On export, SMIL fragments whose text reference points to an id that no longer exists in the chapter HTML are dropped automatically. This keeps the exported EPUB free of dangling media-overlay references so it plays reliably in EPUB3 readers.
+
 ### Toolbar Features
 
 - **Scissors icon (Cut Tool)**: Split text fragments at desired points with intelligent word-boundary snapping
