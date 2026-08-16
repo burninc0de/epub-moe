@@ -246,7 +246,12 @@ const App: React.FC = () => {
         return;
       }
 
+      const active = document.activeElement;
+      const isRangeInput = active instanceof HTMLInputElement && active.type === 'range';
+      const isTextInput = isInputField(active) && !isRangeInput;
+
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
+        if (isTextInput) return;
         event.preventDefault();
         if (event.shiftKey) {
           if (canRedoRef.current) redoRef.current();
@@ -257,14 +262,13 @@ const App: React.FC = () => {
       }
 
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'y') {
+        if (isTextInput) return;
         event.preventDefault();
         if (canRedoRef.current) redoRef.current();
         return;
       }
 
-      const active = document.activeElement;
-      const isRangeInput = active instanceof HTMLInputElement && active.type === 'range';
-      if (isInputField(active) && !isRangeInput) return;
+      if (isTextInput) return;
 
       if (event.code === 'KeyX') {
         toggleCutToolStickyRef.current();
