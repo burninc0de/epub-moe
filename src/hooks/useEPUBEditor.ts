@@ -3,6 +3,7 @@ import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { EPUBParser } from '../utils/epubParser';
 import { exportEPUB as buildExportEPUB } from '../utils/exportEPUB';
+import { snapFragmentBoundaries } from '../utils/fragmentSnap';
 import { EPUBData, EPUBChapter, SMILFragment } from '../types/epub';
 import { useEditorHistory, cloneEPUBData, HistoryContext } from './useEditorHistory';
 
@@ -267,18 +268,11 @@ export const useEPUBEditor = () => {
       const newStart = Math.max(0, Math.min(fragment.clipBegin + deltaSeconds, fragment.clipEnd - 0.01));
       if (newStart === fragment.clipBegin) return;
 
-      const updatedFragments = [...fragments];
-      updatedFragments[fragmentIndex] = { ...fragment, clipBegin: newStart };
-
-      if (fragmentIndex > 0) {
-        updatedFragments[fragmentIndex - 1] = {
-          ...updatedFragments[fragmentIndex - 1],
-          clipEnd: newStart,
-        };
-      }
-
       const newSmilFiles = new Map(data.smilFiles);
-      newSmilFiles.set(smilId, normalizeOrder(updatedFragments));
+      newSmilFiles.set(
+        smilId,
+        normalizeOrder(snapFragmentBoundaries(fragments, fragmentIndex, newStart, fragment.clipEnd))
+      );
 
       const newData = { ...data, smilFiles: newSmilFiles };
       epubDataRef.current = newData;
@@ -314,18 +308,11 @@ export const useEPUBEditor = () => {
       const newEnd = Math.max(fragment.clipBegin + 0.01, fragment.clipEnd + deltaSeconds);
       if (newEnd === fragment.clipEnd) return;
 
-      const updatedFragments = [...fragments];
-      updatedFragments[fragmentIndex] = { ...fragment, clipEnd: newEnd };
-
-      if (fragmentIndex < updatedFragments.length - 1) {
-        updatedFragments[fragmentIndex + 1] = {
-          ...updatedFragments[fragmentIndex + 1],
-          clipBegin: newEnd,
-        };
-      }
-
       const newSmilFiles = new Map(data.smilFiles);
-      newSmilFiles.set(smilId, normalizeOrder(updatedFragments));
+      newSmilFiles.set(
+        smilId,
+        normalizeOrder(snapFragmentBoundaries(fragments, fragmentIndex, fragment.clipBegin, newEnd))
+      );
 
       const newData = { ...data, smilFiles: newSmilFiles };
       epubDataRef.current = newData;
