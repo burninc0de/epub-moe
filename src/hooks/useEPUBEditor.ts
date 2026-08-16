@@ -109,6 +109,7 @@ export const useEPUBEditor = () => {
           chapterId: selectedChapterRef.current,
           fragmentId: selectedFragmentRef.current?.id ?? null,
         };
+        epubDataRef.current = next;
         _setEpubData(next);
         recordChange(next, context, context, 'Edit HTML');
       } else if (next !== current) {
@@ -167,6 +168,7 @@ export const useEPUBEditor = () => {
         const data = await parser.parse();
 
         clear();
+        epubDataRef.current = data;
         _setEpubData(data);
 
         const lastSelected = localStorage.getItem(LAST_CHAPTER_KEY);
@@ -232,6 +234,7 @@ export const useEPUBEditor = () => {
       }
 
       const newData = { ...data, smilFiles: newSmilFiles };
+      epubDataRef.current = newData;
       _setEpubData(newData);
       recordChange(newData, beforeContext, beforeContext, 'Update timing');
 
@@ -278,6 +281,7 @@ export const useEPUBEditor = () => {
       newSmilFiles.set(smilId, normalizeOrder(updatedFragments));
 
       const newData = { ...data, smilFiles: newSmilFiles };
+      epubDataRef.current = newData;
       _setEpubData(newData);
       recordChange(newData, beforeContext, beforeContext, 'Nudge start');
 
@@ -324,6 +328,7 @@ export const useEPUBEditor = () => {
       newSmilFiles.set(smilId, normalizeOrder(updatedFragments));
 
       const newData = { ...data, smilFiles: newSmilFiles };
+      epubDataRef.current = newData;
       _setEpubData(newData);
       recordChange(newData, beforeContext, beforeContext, 'Nudge end');
 
@@ -363,6 +368,7 @@ export const useEPUBEditor = () => {
         fragmentId: beforeContext.fragmentId === fragmentId ? null : beforeContext.fragmentId,
       };
 
+      epubDataRef.current = newData;
       _setEpubData(newData);
       recordChange(newData, beforeContext, afterContext, 'Delete fragment');
 
@@ -559,6 +565,7 @@ export const useEPUBEditor = () => {
         fragmentId: firstFragment.id,
       };
 
+      epubDataRef.current = newData;
       _setEpubData(newData);
       recordChange(newData, beforeContext, afterContext, 'Split fragment');
       setSelectedFragment(firstFragment);
@@ -605,6 +612,7 @@ export const useEPUBEditor = () => {
       newSmilFiles.set(smilFileId, fragmentsWithCorrectOrder);
 
       const newData = { ...data, smilFiles: newSmilFiles };
+      epubDataRef.current = newData;
       _setEpubData(newData);
       recordChange(newData, beforeContext, beforeContext, 'Apply time offset');
 
@@ -716,6 +724,7 @@ export const useEPUBEditor = () => {
       newSmilFiles.set(smilFileId, normalized);
 
       const newData = { ...data, smilFiles: newSmilFiles };
+      epubDataRef.current = newData;
       _setEpubData(newData);
       recordChange(newData, beforeContext, beforeContext, 'Force align');
 
