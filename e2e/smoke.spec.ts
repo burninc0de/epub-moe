@@ -228,6 +228,44 @@ test('dragging a region boundary updates timings and keeps neighbours snapped', 
   expect(after.right).toBeGreaterThan(before.right + 0.25);
 });
 
+test('dragged boundary snap is preserved in exported EPUB', async ({ page }) => {
+  await loadEPUB(page);
+
+  const regions = page.locator('.waveform-scroll [part~="region"]');
+  await expect(regions.first()).toBeVisible({ timeout: 10000 });
+
+  const firstRegion = regions.nth(0);
+  const secondRegion = regions.nth(1);
+
+  const handle = firstRegion.locator('[part~="region-handle-right"]');
+  await expect(handle).toBeVisible();
+  const box = await handle.boundingBox();
+  expect(box).toBeTruthy();
+  await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box!.x + box!.width / 2 - 40, box!.y + box!.height / 2, { steps: 10 });
+  await page.mouse.up();
+
+  await expect.poll(() => gapBetweenRegions(firstRegion, secondRegion)).toBeLessThan(1);
+
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Export EPUB' }).click();
+  const download = await downloadPromise;
+  const filePath = await download.path();
+  expect(filePath).toBeTruthy();
+
+  const zip = await JSZip.loadAsync(await readFile(filePath!));
+  const smilFile = zip.file('OEBPS/MediaOverlays/Kapitel01.smil');
+  expect(smilFile).toBeTruthy();
+  const smil = await smilFile!.async('string');
+  const audioTimings = [...smil.matchAll(/<audio[^>]+clipBegin="([0-9.]+)s"[^>]+clipEnd="([0-9.]+)s"/g)];
+  expect(audioTimings.length).toBeGreaterThan(1);
+
+  const firstEnd = parseFloat(audioTimings[0][2]);
+  const secondStart = parseFloat(audioTimings[1][1]);
+  expect(Math.abs(firstEnd - secondStart)).toBeLessThan(0.01);
+});
+
 test('force align rewrites fragments to continuous coverage', async ({ page }) => {
   await loadEPUB(page);
 
