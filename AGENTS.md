@@ -8,7 +8,8 @@ React + TypeScript + Vite + Tailwind SPA for fine-tuning synchronized text/audio
 npm run dev      # Vite dev server on http://localhost:5173
 npm run build    # production build to dist/ (passes; typecheck is NOT run)
 npm run preview  # serve the production build
-npm test         # full gate: lint → build → fixture check/download → Playwright smoke tests
+npm test         # full gate: lint → build → fixture check/download → Vitest unit tests → Playwright smoke tests
+npm run test:unit  # Vitest unit tests for pure utils (smilBuilder, time, epubParser)
 npm run lint     # ESLint - works; see notes below
 ```
 

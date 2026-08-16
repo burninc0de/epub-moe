@@ -1,13 +1,6 @@
 import { SMILFragment } from '../types/epub';
 import { create } from 'xmlbuilder2';
-
-export const formatSMILDuration = (seconds: number): string => {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const secs = seconds % 60;
-
-  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toFixed(2).padStart(5, '0')}`;
-};
+import { formatSMILDuration } from './time';
 
 export const calculateTotalDuration = (fragments: SMILFragment[]): number => {
   if (fragments.length === 0) return 0;

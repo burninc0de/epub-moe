@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatTime, formatTimeWithMs, parseTimeInput } from './time';
+import { formatTime, formatTimeWithMs, formatSMILDuration, parseTimeInput } from './time';
 
 describe('formatTime', () => {
   it('formats minutes and seconds', () => {
@@ -17,6 +17,20 @@ describe('formatTimeWithMs', () => {
   });
 });
 
+describe('formatSMILDuration', () => {
+  it('formats zero', () => {
+    expect(formatSMILDuration(0)).toBe('00:00:00.00');
+  });
+
+  it('formats minutes and seconds with two decimals', () => {
+    expect(formatSMILDuration(61.5)).toBe('00:01:01.50');
+  });
+
+  it('formats hours', () => {
+    expect(formatSMILDuration(3661)).toBe('01:01:01.00');
+  });
+});
+
 describe('parseTimeInput', () => {
   it('parses m:ss input', () => {
     expect(parseTimeInput('1:23')).toBe(83);
@@ -25,6 +39,12 @@ describe('parseTimeInput', () => {
 
   it('parses plain seconds', () => {
     expect(parseTimeInput('45')).toBe(45);
+  });
+
+  it('parses SMIL clock and suffixed times', () => {
+    expect(parseTimeInput('00:00:03')).toBe(3);
+    expect(parseTimeInput('00:00:03.500')).toBe(3.5);
+    expect(parseTimeInput('2s')).toBe(2);
   });
 
   it('returns 0 for garbage', () => {

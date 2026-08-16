@@ -1,6 +1,7 @@
 import JSZip from 'jszip';
 import { parseString } from 'xml2js';
 import { EPUBData, EPUBChapter, SMILFragment, AudioFile, ContainerXML, OPFPackage, SMILPar, SMILFile } from '../types/epub';
+import { parseTimeInput } from './time';
 
 const XHTML_MEDIA_TYPE = 'application/xhtml+xml';
 const SMIL_MEDIA_TYPE = 'application/smil+xml';
@@ -138,8 +139,8 @@ export class EPUBParser {
           id: `${smilId}::${baseId}`,
           textSrc: text.$.src,
           audioSrc: audio.$.src,
-          clipBegin: this.parseTime(audio.$['clipBegin'] || '0s'),
-          clipEnd: this.parseTime(audio.$['clipEnd'] || '0s'),
+          clipBegin: parseTimeInput(audio.$['clipBegin'] || '0s'),
+          clipEnd: parseTimeInput(audio.$['clipEnd'] || '0s'),
           text: '',
           order: index
         });
@@ -171,17 +172,6 @@ export class EPUBParser {
     }
     
     return audioFiles;
-  }
-
-  private parseTime(timeStr: string): number {
-    if (timeStr.endsWith('s')) {
-      return parseFloat(timeStr.slice(0, -1));
-    }
-    if (timeStr.includes(':')) {
-      const parts = timeStr.split(':').map(p => parseFloat(p));
-      return parts.reduce((acc, curr, idx) => acc + curr * Math.pow(60, parts.length - idx - 1), 0);
-    }
-    return parseFloat(timeStr) || 0;
   }
 
   private extractTitle(htmlContent: string): string | null {

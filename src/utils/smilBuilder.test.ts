@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import {
   buildSMIL,
-  formatSMILDuration,
   calculateTotalDuration,
   updateOPFWithDuration,
 } from './smilBuilder';
+import { formatSMILDuration } from './time';
 import { SMILFragment } from '../types/epub';
 
 const makeFragment = (overrides: Partial<SMILFragment>): SMILFragment => ({
