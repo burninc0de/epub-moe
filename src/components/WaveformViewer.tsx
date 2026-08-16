@@ -4,6 +4,7 @@ import WaveSurfer from 'wavesurfer.js';
 import RegionsPlugin from 'wavesurfer.js/dist/plugins/regions.js';
 import { Play, Pause, Square, ZoomIn, ZoomOut, RotateCcw, Clock, Magnet, AlertTriangle, ChevronLeft, ChevronRight, Volume2, VolumeX } from 'lucide-react';
 import { SMILFragment } from '../types/epub';
+import { snapFragmentBoundaries } from '../utils/fragmentSnap';
 import { formatTime, parseTimeInput } from '../utils/time';
 import { Button, IconButton, FieldLabel, TextInput, ToolbarDivider, Modal } from './ui';
 
@@ -27,6 +28,8 @@ interface WaveformViewerProps {
   onFragmentUpdate: (fragmentId: string, updates: Partial<SMILFragment>) => void;
   onApplyTimeOffset: (fromTime: number, offsetSeconds: number) => void;
   onForceNonOverlapping: (audioDuration: number) => void;
+  onDragStart?: () => void;
+  onDragEnd?: () => void;
   regionColorStyle?: RegionColorStyle;
 }
 
@@ -77,6 +80,8 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
   onFragmentUpdate,
   onApplyTimeOffset,
   onForceNonOverlapping,
+  onDragStart,
+  onDragEnd,
   regionColorStyle = 'modern',
 }, ref) => {
   const waveformRef = useRef<HTMLDivElement>(null);
@@ -121,10 +126,14 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
   // Refs to hold the latest callbacks
   const onFragmentSelectRef = useRef(onFragmentSelect);
   const onFragmentUpdateRef = useRef(onFragmentUpdate);
+  const onDragStartRef = useRef(onDragStart);
+  const onDragEndRef = useRef(onDragEnd);
   const isSnapEnabledRef = useRef(isSnapEnabled);
   useEffect(() => {
     onFragmentSelectRef.current = onFragmentSelect;
     onFragmentUpdateRef.current = onFragmentUpdate;
+    onDragStartRef.current = onDragStart;
+    onDragEndRef.current = onDragEnd;
   });
 
   useEffect(() => {
@@ -240,36 +249,38 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
     };
 
     // Sync a region's data into state, keeping neighbor boundaries contiguous when snap is on
-    const syncRegionUpdate = (region: { id: string; start: number; end: number }) => {
+    const syncRegionUpdate = (region: { id: string; start: number; end: number }, original?: { start: number; end: number }) => {
       const idx = fragmentsRef.current.findIndex(f => f.id === region.id);
       if (idx === -1) return false;
 
-      const prevFragment = fragmentsRef.current[idx];
-      const prevStart = prevFragment.clipBegin;
-      const prevEnd = prevFragment.clipEnd;
+      const prevStart = original?.start ?? fragmentsRef.current[idx].clipBegin;
+      const prevEnd = original?.end ?? fragmentsRef.current[idx].clipEnd;
+      const originalNextBegin = idx < fragmentsRef.current.length - 1 ? fragmentsRef.current[idx + 1].clipBegin : null;
+      const originalPrevEnd = idx > 0 ? fragmentsRef.current[idx - 1].clipEnd : null;
 
+      fragmentsRef.current = snapFragmentBoundaries(fragmentsRef.current, idx, region.start, region.end);
       onFragmentUpdateRef.current(region.id, { clipBegin: region.start, clipEnd: region.end });
-      fragmentsRef.current[idx].clipBegin = region.start;
-      fragmentsRef.current[idx].clipEnd = region.end;
 
       if (isSnapEnabledRef.current) {
         // If end changed, update next region's start (only)
-        if (Math.abs(region.end - prevEnd) > REGION_EPSILON && idx < fragmentsRef.current.length - 1) {
-          const next = fragmentsRef.current[idx + 1];
-          if (next.clipBegin !== region.end) {
-            next.clipBegin = region.end;
-            onFragmentUpdateRef.current(next.id, { clipBegin: region.end });
-            updateRegionVisual(next.id, { start: region.end });
-          }
+        if (
+          Math.abs(region.end - prevEnd) > REGION_EPSILON &&
+          idx < fragmentsRef.current.length - 1 &&
+          originalNextBegin !== region.end
+        ) {
+          const nextId = fragmentsRef.current[idx + 1].id;
+          onFragmentUpdateRef.current(nextId, { clipBegin: region.end });
+          updateRegionVisual(nextId, { start: region.end });
         }
         // If start changed, update previous region's end (only)
-        if (Math.abs(region.start - prevStart) > REGION_EPSILON && idx > 0) {
-          const prev = fragmentsRef.current[idx - 1];
-          if (prev.clipEnd !== region.start) {
-            prev.clipEnd = region.start;
-            onFragmentUpdateRef.current(prev.id, { clipEnd: region.start });
-            updateRegionVisual(prev.id, { end: region.start });
-          }
+        if (
+          Math.abs(region.start - prevStart) > REGION_EPSILON &&
+          idx > 0 &&
+          originalPrevEnd !== region.start
+        ) {
+          const prevId = fragmentsRef.current[idx - 1].id;
+          onFragmentUpdateRef.current(prevId, { clipEnd: region.start });
+          updateRegionVisual(prevId, { end: region.start });
         }
       }
 
@@ -300,24 +311,50 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
 
     // Track drag state using region-update event
     const dragStartPositions: { [key: string]: { start: number, end: number } } = {};
+    const dragPreviousPositions: { [key: string]: { start: number, end: number } } = {};
     regionsPluginRef.current.on('region-update', (region) => {
       if (!dragStartPositions[region.id]) {
         // Drag started
         dragStartPositions[region.id] = { start: region.start, end: region.end };
+        dragPreviousPositions[region.id] = { start: region.start, end: region.end };
         setIsDragging(true);
         setDraggedRegionId(region.id);
+        onDragStartRef.current?.();
       }
+
+      // Keep neighbour boundaries visually contiguous while dragging, matching nudge behaviour.
+      if (isSnapEnabledRef.current) {
+        const idx = fragmentsRef.current.findIndex((f) => f.id === region.id);
+        const previous = dragPreviousPositions[region.id];
+        if (idx !== -1 && previous) {
+          if (idx > 0 && Math.abs(region.start - previous.start) > REGION_EPSILON) {
+            updateRegionVisual(fragmentsRef.current[idx - 1].id, { end: region.start });
+          }
+
+          if (
+            idx < fragmentsRef.current.length - 1 &&
+            Math.abs(region.end - previous.end) > REGION_EPSILON
+          ) {
+            updateRegionVisual(fragmentsRef.current[idx + 1].id, { start: region.end });
+          }
+        }
+      }
+
+      dragPreviousPositions[region.id] = { start: region.start, end: region.end };
     });
 
     regionsPluginRef.current.on('region-updated', (region) => {
       // Drag ended - now update parent state
       if (dragStartPositions[region.id]) {
+        const original = dragStartPositions[region.id];
         delete dragStartPositions[region.id];
+        delete dragPreviousPositions[region.id];
         setIsDragging(false);
         setDraggedRegionId(null);
 
         // On drag end, update the parent state with final positions
-        syncRegionUpdate(region);
+        syncRegionUpdate(region, original);
+        onDragEndRef.current?.();
       }
     });
 

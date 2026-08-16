@@ -19,7 +19,7 @@ export const FragmentEditor: React.FC<FragmentEditorProps> = ({
   onFragmentUpdate,
   onFragmentDelete,
   onNudgeFragmentStart,
-  onNudgeFragmentEnd
+  onNudgeFragmentEnd,
 }) => {
   const [startTimeInput, setStartTimeInput] = useState('');
   const [endTimeInput, setEndTimeInput] = useState('');
@@ -49,7 +49,7 @@ export const FragmentEditor: React.FC<FragmentEditorProps> = ({
 
     onFragmentUpdate(selectedFragment.id, {
       clipBegin: newStart,
-      clipEnd: newEnd
+      clipEnd: newEnd,
     });
   };
 

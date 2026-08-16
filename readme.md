@@ -22,6 +22,7 @@ You can access the latest build directly in your browser at [https://epub-moe.pa
 - **Fine-tune fragments**: Edit timing values precisely, delete unwanted fragments directly from the GUI
 - **Inline HTML editing**: Make quick adjustments to highlight placement without leaving the app
 - **Fragment splitting**: Break up sprawling sentences into digestible chunks
+- **Undo/redo**: 100-step history for waveform edits, splits, deletes, offsets, force-align, and HTML edits
 - **EPUB-centric workflow**: Load EPUB, edit, export EPUB - no format conversion hell and no audio re-encoding (!)
 
 ## What This Doesn't Do
@@ -134,10 +135,12 @@ npm run test:playwright
 - The nudge step is adjustable in Settings (5–5000ms)
 - **R**: Replay the current fragment from its start
 - **X**: Toggle cut tool sticky mode (same as double-clicking the scissors icon)
+- **Ctrl+Z / Cmd+Z**: Undo the last action (up to 100 steps)
+- **Ctrl+Shift+Z / Cmd+Shift+Z** or **Ctrl+Y / Cmd+Y**: Redo a previously undone action
 - **Ctrl+S / Cmd+S**: Export the EPUB
 - **Ctrl / Cmd + scroll**: Zoom text in the content viewer (or HTML editor when open)
 - **Ctrl/Cmd + `0`**: Reset zoom to 100%
-- Zoom shortcuts also work while typing; playback, navigation, and cut-tool shortcuts are disabled only while focus is in the HTML editor or a text field, so they stay usable elsewhere during HTML edit mode
+- Zoom shortcuts also work while typing; playback, navigation, and cut-tool shortcuts are disabled only while focus is in the HTML editor or a text field, so they stay usable elsewhere during HTML edit mode. Undo/redo shortcuts fall back to the field's native undo/redo when focus is inside a text input.
 
 ## Additional Screenshots
 
@@ -151,7 +154,6 @@ npm run test:playwright
 
 - Built around my production workflow — it solves my EPUBs, likely yours too
 - Error handling is pragmatic; tested against Storyteller and Tobi exports, and the smoke-test fixture
-- No undo functionality (export often!)
 - Single-user, local-only (no cloud features)
 
 ## Contributing

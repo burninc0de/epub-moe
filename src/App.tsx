@@ -8,7 +8,7 @@ import { SettingsPanel } from './components/SettingsPanel';
 import { useEPUBEditor } from './hooks/useEPUBEditor';
 import { Resizer } from './components/Resizer';
 import { FragmentSpacing, isValidFragmentSpacing } from './types/epub';
-import { Upload, Loader2, PanelRightOpen, PanelRightClose, PanelLeftOpen, PanelLeftClose, Feather, Settings } from 'lucide-react';
+import { Upload, Loader2, PanelRightOpen, PanelRightClose, PanelLeftOpen, PanelLeftClose, Feather, Settings, Undo2, Redo2 } from 'lucide-react';
 import { Button, IconButton, Modal } from './components/ui';
 import { DEFAULT_CODE_THEME_ID } from './utils/codeThemes';
 import { RegionColorStyle } from './components/WaveformViewer';
@@ -150,6 +150,12 @@ const App: React.FC = () => {
     currentAudioBlob,
     exportEPUB,
     setEpubData,
+    canUndo,
+    canRedo,
+    undo,
+    redo,
+    setHistoryPaused,
+    commitHistory,
   } = useEPUBEditor();
 
   const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -171,6 +177,48 @@ const App: React.FC = () => {
       setIsLoadingExport(false);
     }
   }, [exportEPUB]);
+
+  const handleWaveformDragStart = useCallback(() => {
+    setHistoryPaused(true);
+  }, [setHistoryPaused]);
+
+  const handleWaveformDragEnd = useCallback(() => {
+    setHistoryPaused(false);
+    commitHistory('Drag boundary');
+  }, [setHistoryPaused, commitHistory]);
+
+  const isLoadingExportRef = useRef(isLoadingExport);
+  useEffect(() => { isLoadingExportRef.current = isLoadingExport; }, [isLoadingExport]);
+
+  const handleExportEPUBRef = useRef(handleExportEPUB);
+  useEffect(() => { handleExportEPUBRef.current = handleExportEPUB; }, [handleExportEPUB]);
+
+  const canUndoRef = useRef(canUndo);
+  useEffect(() => { canUndoRef.current = canUndo; }, [canUndo]);
+
+  const canRedoRef = useRef(canRedo);
+  useEffect(() => { canRedoRef.current = canRedo; }, [canRedo]);
+
+  const undoRef = useRef(undo);
+  useEffect(() => { undoRef.current = undo; }, [undo]);
+
+  const redoRef = useRef(redo);
+  useEffect(() => { redoRef.current = redo; }, [redo]);
+
+  const selectedFragmentRef = useRef(selectedFragment);
+  useEffect(() => { selectedFragmentRef.current = selectedFragment; }, [selectedFragment]);
+
+  const nudgeStepRef = useRef(nudgeStep);
+  useEffect(() => { nudgeStepRef.current = nudgeStep; }, [nudgeStep]);
+
+  const nudgeFragmentStartRef = useRef(nudgeFragmentStart);
+  useEffect(() => { nudgeFragmentStartRef.current = nudgeFragmentStart; }, [nudgeFragmentStart]);
+
+  const nudgeFragmentEndRef = useRef(nudgeFragmentEnd);
+  useEffect(() => { nudgeFragmentEndRef.current = nudgeFragmentEnd; }, [nudgeFragmentEnd]);
+
+  const toggleCutToolStickyRef = useRef(toggleCutToolSticky);
+  useEffect(() => { toggleCutToolStickyRef.current = toggleCutToolSticky; }, [toggleCutToolSticky]);
 
   // Global hotkey for Spacebar, arrows, and other shortcuts
   useEffect(() => {
@@ -194,37 +242,54 @@ const App: React.FC = () => {
 
       if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
         event.preventDefault();
-        if (!isLoadingExport) handleExportEPUB();
+        if (!isLoadingExportRef.current) handleExportEPUBRef.current();
         return;
       }
 
       const active = document.activeElement;
       const isRangeInput = active instanceof HTMLInputElement && active.type === 'range';
-      if (isInputField(active) && !isRangeInput) return;
+      const isTextInput = isInputField(active) && !isRangeInput;
+
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
+        if (isTextInput) return;
+        event.preventDefault();
+        if (event.shiftKey) {
+          if (canRedoRef.current) redoRef.current();
+        } else {
+          if (canUndoRef.current) undoRef.current();
+        }
+        return;
+      }
+
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'y') {
+        if (isTextInput) return;
+        event.preventDefault();
+        if (canRedoRef.current) redoRef.current();
+        return;
+      }
+
+      if (isTextInput) return;
 
       if (event.code === 'KeyX') {
-        toggleCutToolSticky();
+        toggleCutToolStickyRef.current();
         return;
       }
 
       if (event.code === 'Space') {
-        event.preventDefault(); // Prevent default spacebar behavior (e.g., scrolling, slider activation)
-        // Drop focus from a focused slider so it doesn't keep an ugly highlight
+        event.preventDefault();
         if (isRangeInput) (active as HTMLInputElement).blur();
-        if (waveformViewerRef.current) {
-          waveformViewerRef.current.togglePlayback();
-        }
+        waveformViewerRef.current?.togglePlayback();
       } else if (event.code === 'ArrowLeft') {
         if (event.ctrlKey && event.shiftKey) {
           event.preventDefault();
           if (isRangeInput) (active as HTMLInputElement).blur();
-          if (selectedFragment) nudgeFragmentEnd(selectedFragment.id, -nudgeStep);
+          if (selectedFragmentRef.current) nudgeFragmentEndRef.current(selectedFragmentRef.current.id, -nudgeStepRef.current);
           return;
         }
         if (event.ctrlKey || event.metaKey) {
           event.preventDefault();
           if (isRangeInput) (active as HTMLInputElement).blur();
-          if (selectedFragment) nudgeFragmentStart(selectedFragment.id, -nudgeStep);
+          if (selectedFragmentRef.current) nudgeFragmentStartRef.current(selectedFragmentRef.current.id, -nudgeStepRef.current);
           return;
         }
         if (isRangeInput) (active as HTMLInputElement).blur();
@@ -233,13 +298,13 @@ const App: React.FC = () => {
         if (event.ctrlKey && event.shiftKey) {
           event.preventDefault();
           if (isRangeInput) (active as HTMLInputElement).blur();
-          if (selectedFragment) nudgeFragmentEnd(selectedFragment.id, nudgeStep);
+          if (selectedFragmentRef.current) nudgeFragmentEndRef.current(selectedFragmentRef.current.id, nudgeStepRef.current);
           return;
         }
         if (event.ctrlKey || event.metaKey) {
           event.preventDefault();
           if (isRangeInput) (active as HTMLInputElement).blur();
-          if (selectedFragment) nudgeFragmentStart(selectedFragment.id, nudgeStep);
+          if (selectedFragmentRef.current) nudgeFragmentStartRef.current(selectedFragmentRef.current.id, nudgeStepRef.current);
           return;
         }
         if (isRangeInput) (active as HTMLInputElement).blur();
@@ -254,7 +319,7 @@ const App: React.FC = () => {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [toggleCutToolSticky, handleExportEPUB, isLoadingExport, nudgeFragmentStart, nudgeFragmentEnd, nudgeStep, selectedFragment]);
+  }, []);
 
   const handleAutoFollowChange = useCallback((value: boolean) => {
     setAutoFollow(value);
@@ -379,6 +444,21 @@ const App: React.FC = () => {
             title={isLeftPanelCollapsed ? 'Expand Chapter List' : 'Collapse Chapter List'}
           >
             {isLeftPanelCollapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+          </IconButton>
+          <div className="w-px h-5 bg-gray-700 mx-1" />
+          <IconButton
+            onClick={undo}
+            disabled={!canUndo}
+            title="Undo (Ctrl+Z)"
+          >
+            <Undo2 size={16} />
+          </IconButton>
+          <IconButton
+            onClick={redo}
+            disabled={!canRedo}
+            title="Redo (Ctrl+Shift+Z)"
+          >
+            <Redo2 size={16} />
           </IconButton>
         </div>
         <div className="flex items-center gap-1">
@@ -530,6 +610,8 @@ const App: React.FC = () => {
               onFragmentUpdate={updateFragment}
               onApplyTimeOffset={applyTimeOffset}
               onForceNonOverlapping={(audioDuration) => forceNonOverlappingFragments(audioDuration)}
+              onDragStart={handleWaveformDragStart}
+              onDragEnd={handleWaveformDragEnd}
               regionColorStyle={regionColorStyle}
             />
           </div>
