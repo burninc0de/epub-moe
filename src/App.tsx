@@ -187,6 +187,39 @@ const App: React.FC = () => {
     commitHistory('Drag boundary');
   }, [setHistoryPaused, commitHistory]);
 
+  const isLoadingExportRef = useRef(isLoadingExport);
+  useEffect(() => { isLoadingExportRef.current = isLoadingExport; }, [isLoadingExport]);
+
+  const handleExportEPUBRef = useRef(handleExportEPUB);
+  useEffect(() => { handleExportEPUBRef.current = handleExportEPUB; }, [handleExportEPUB]);
+
+  const canUndoRef = useRef(canUndo);
+  useEffect(() => { canUndoRef.current = canUndo; }, [canUndo]);
+
+  const canRedoRef = useRef(canRedo);
+  useEffect(() => { canRedoRef.current = canRedo; }, [canRedo]);
+
+  const undoRef = useRef(undo);
+  useEffect(() => { undoRef.current = undo; }, [undo]);
+
+  const redoRef = useRef(redo);
+  useEffect(() => { redoRef.current = redo; }, [redo]);
+
+  const selectedFragmentRef = useRef(selectedFragment);
+  useEffect(() => { selectedFragmentRef.current = selectedFragment; }, [selectedFragment]);
+
+  const nudgeStepRef = useRef(nudgeStep);
+  useEffect(() => { nudgeStepRef.current = nudgeStep; }, [nudgeStep]);
+
+  const nudgeFragmentStartRef = useRef(nudgeFragmentStart);
+  useEffect(() => { nudgeFragmentStartRef.current = nudgeFragmentStart; }, [nudgeFragmentStart]);
+
+  const nudgeFragmentEndRef = useRef(nudgeFragmentEnd);
+  useEffect(() => { nudgeFragmentEndRef.current = nudgeFragmentEnd; }, [nudgeFragmentEnd]);
+
+  const toggleCutToolStickyRef = useRef(toggleCutToolSticky);
+  useEffect(() => { toggleCutToolStickyRef.current = toggleCutToolSticky; }, [toggleCutToolSticky]);
+
   // Global hotkey for Spacebar, arrows, and other shortcuts
   useEffect(() => {
     const isInputField = (element: Element | null): boolean => {
@@ -209,23 +242,23 @@ const App: React.FC = () => {
 
       if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
         event.preventDefault();
-        if (!isLoadingExport) handleExportEPUB();
+        if (!isLoadingExportRef.current) handleExportEPUBRef.current();
         return;
       }
 
-      if ((event.ctrlKey || event.metaKey) && event.code === 'KeyZ') {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
         event.preventDefault();
         if (event.shiftKey) {
-          if (canRedo) redo();
+          if (canRedoRef.current) redoRef.current();
         } else {
-          if (canUndo) undo();
+          if (canUndoRef.current) undoRef.current();
         }
         return;
       }
 
-      if ((event.ctrlKey || event.metaKey) && event.code === 'KeyY') {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'y') {
         event.preventDefault();
-        if (canRedo) redo();
+        if (canRedoRef.current) redoRef.current();
         return;
       }
 
@@ -234,28 +267,25 @@ const App: React.FC = () => {
       if (isInputField(active) && !isRangeInput) return;
 
       if (event.code === 'KeyX') {
-        toggleCutToolSticky();
+        toggleCutToolStickyRef.current();
         return;
       }
 
       if (event.code === 'Space') {
-        event.preventDefault(); // Prevent default spacebar behavior (e.g., scrolling, slider activation)
-        // Drop focus from a focused slider so it doesn't keep an ugly highlight
+        event.preventDefault();
         if (isRangeInput) (active as HTMLInputElement).blur();
-        if (waveformViewerRef.current) {
-          waveformViewerRef.current.togglePlayback();
-        }
+        waveformViewerRef.current?.togglePlayback();
       } else if (event.code === 'ArrowLeft') {
         if (event.ctrlKey && event.shiftKey) {
           event.preventDefault();
           if (isRangeInput) (active as HTMLInputElement).blur();
-          if (selectedFragment) nudgeFragmentEnd(selectedFragment.id, -nudgeStep);
+          if (selectedFragmentRef.current) nudgeFragmentEndRef.current(selectedFragmentRef.current.id, -nudgeStepRef.current);
           return;
         }
         if (event.ctrlKey || event.metaKey) {
           event.preventDefault();
           if (isRangeInput) (active as HTMLInputElement).blur();
-          if (selectedFragment) nudgeFragmentStart(selectedFragment.id, -nudgeStep);
+          if (selectedFragmentRef.current) nudgeFragmentStartRef.current(selectedFragmentRef.current.id, -nudgeStepRef.current);
           return;
         }
         if (isRangeInput) (active as HTMLInputElement).blur();
@@ -264,13 +294,13 @@ const App: React.FC = () => {
         if (event.ctrlKey && event.shiftKey) {
           event.preventDefault();
           if (isRangeInput) (active as HTMLInputElement).blur();
-          if (selectedFragment) nudgeFragmentEnd(selectedFragment.id, nudgeStep);
+          if (selectedFragmentRef.current) nudgeFragmentEndRef.current(selectedFragmentRef.current.id, nudgeStepRef.current);
           return;
         }
         if (event.ctrlKey || event.metaKey) {
           event.preventDefault();
           if (isRangeInput) (active as HTMLInputElement).blur();
-          if (selectedFragment) nudgeFragmentStart(selectedFragment.id, nudgeStep);
+          if (selectedFragmentRef.current) nudgeFragmentStartRef.current(selectedFragmentRef.current.id, nudgeStepRef.current);
           return;
         }
         if (isRangeInput) (active as HTMLInputElement).blur();
@@ -285,7 +315,7 @@ const App: React.FC = () => {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [toggleCutToolSticky, handleExportEPUB, isLoadingExport, nudgeFragmentStart, nudgeFragmentEnd, nudgeStep, selectedFragment, undo, redo, canUndo, canRedo]);
+  }, []);
 
   const handleAutoFollowChange = useCallback((value: boolean) => {
     setAutoFollow(value);
