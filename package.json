@@ -27,8 +27,9 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "npm run lint && npm run build && npm run test:fixture && npm run test:playwright",
+    "test": "npm run lint && npm run build && npm run test:fixture && npm run test:unit && npm run test:playwright",
     "test:fixture": "node scripts/ensure-fixture.mjs",
+    "test:unit": "vitest run",
     "test:playwright": "playwright test"
   },
   "dependencies": {
@@ -64,7 +65,8 @@
     "tailwindcss": "^3.4.1",
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.66.0",
-    "vite": "^8.1.5"
+    "vite": "^8.1.5",
+    "vitest": "^4.1.10"
   },
   "overrides": {
     "brace-expansion": "5.0.9",
