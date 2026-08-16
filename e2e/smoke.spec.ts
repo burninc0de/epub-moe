@@ -288,3 +288,30 @@ test('HTML editor save applies changes and cancel discards them', async ({ page 
   await expect(page.locator('#root')).not.toContainText('Quatschen');
 });
 
+test('undo and redo restore a nudged timing change', async ({ page }) => {
+  await loadEPUB(page);
+
+  await page.locator('[data-fragment-id]').first().click();
+  const startTimeInput = page.getByText('Start Time').locator('..').locator('input');
+  await expect(startTimeInput).toHaveValue('0:00.270');
+
+  await page.getByTitle('Nudge start later by 0.05s').click();
+  await expect(startTimeInput).toHaveValue('0:00.320');
+
+  await page.getByTitle('Undo (Ctrl+Z)').click();
+  await expect(startTimeInput).toHaveValue('0:00.270');
+
+  await page.getByTitle('Redo (Ctrl+Shift+Z)').click();
+  await expect(startTimeInput).toHaveValue('0:00.320');
+});
+
+test('history panel lists recorded operations', async ({ page }) => {
+  await loadEPUB(page);
+
+  await page.locator('[data-fragment-id]').first().click();
+  await page.getByTitle('Nudge start later by 0.05s').click();
+
+  await expect(page.getByRole('button', { name: 'Load EPUB', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Nudge start', exact: true })).toBeVisible();
+});
+

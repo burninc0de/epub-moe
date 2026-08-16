@@ -34,7 +34,7 @@ npm run lint     # ESLint - works; see notes below
 - **Dark mode is forced on** in `src/main.tsx` via `document.documentElement.classList.add('dark')`, so Tailwind `dark:` variants are always active. Don't add light-mode styling; don't remove the class.
 - `vite.config.ts` sets `define: { global: 'window' }` and aliases `events: 'events'` — browser polyfills for xml2js/jszip. Keep them.
 - VBR MP3s cause waveform drift over time (readme documents this); assume CBR audio.
-- Known limitation: no undo. UI work shouldn't assume one exists.
+- Undo/redo is implemented with a ~100-step history tracked in `useEPUBEditor` and exposed in the Fragment Editor panel.
 - The tool fine-tunes existing media overlays only — it does not auto-sync audio or create overlays from scratch.
 
 ## Conventions

@@ -150,6 +150,13 @@ const App: React.FC = () => {
     currentAudioBlob,
     exportEPUB,
     setEpubData,
+    history,
+    historyIndex,
+    canUndo,
+    canRedo,
+    undo,
+    redo,
+    goToHistory,
   } = useEPUBEditor();
 
   const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -195,6 +202,22 @@ const App: React.FC = () => {
       if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
         event.preventDefault();
         if (!isLoadingExport) handleExportEPUB();
+        return;
+      }
+
+      if ((event.ctrlKey || event.metaKey) && event.code === 'KeyZ') {
+        event.preventDefault();
+        if (event.shiftKey) {
+          if (canRedo) redo();
+        } else {
+          if (canUndo) undo();
+        }
+        return;
+      }
+
+      if ((event.ctrlKey || event.metaKey) && event.code === 'KeyY') {
+        event.preventDefault();
+        if (canRedo) redo();
         return;
       }
 
@@ -254,7 +277,7 @@ const App: React.FC = () => {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [toggleCutToolSticky, handleExportEPUB, isLoadingExport, nudgeFragmentStart, nudgeFragmentEnd, nudgeStep, selectedFragment]);
+  }, [toggleCutToolSticky, handleExportEPUB, isLoadingExport, nudgeFragmentStart, nudgeFragmentEnd, nudgeStep, selectedFragment, undo, redo, canUndo, canRedo]);
 
   const handleAutoFollowChange = useCallback((value: boolean) => {
     setAutoFollow(value);
@@ -510,6 +533,13 @@ const App: React.FC = () => {
                 onFragmentDelete={deleteFragment}
                 onNudgeFragmentStart={nudgeFragmentStart}
                 onNudgeFragmentEnd={nudgeFragmentEnd}
+                history={history}
+                historyIndex={historyIndex}
+                canUndo={canUndo}
+                canRedo={canRedo}
+                onUndo={undo}
+                onRedo={redo}
+                onHistoryGoTo={goToHistory}
               />
             </div>
           </>
