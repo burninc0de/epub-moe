@@ -140,8 +140,6 @@ const App: React.FC = () => {
     setSelectedFragment,
     updateFragment,
     deleteFragment,
-    splitFragment,
-    addFragment,
     splitFragmentByText,
     nudgeFragmentStart,
     nudgeFragmentEnd,
@@ -507,10 +505,11 @@ const App: React.FC = () => {
             <div style={{ width: rightPanelWidth }} className="flex-shrink-0 h-full overflow-auto bg-panel">
               <FragmentEditor
                 selectedFragment={selectedFragment}
+                nudgeStep={nudgeStep}
                 onFragmentUpdate={updateFragment}
                 onFragmentDelete={deleteFragment}
-                onFragmentSplit={splitFragment}
-                onFragmentAdd={addFragment}
+                onNudgeFragmentStart={nudgeFragmentStart}
+                onNudgeFragmentEnd={nudgeFragmentEnd}
               />
             </div>
           </>

@@ -116,6 +116,17 @@ test('editing fragment timing applies to the fragment', async ({ page }) => {
   await expect(endTimeInput).toHaveValue('0:05.000');
 });
 
+test('nudge buttons adjust fragment timing', async ({ page }) => {
+  await loadEPUB(page);
+
+  await page.locator('[data-fragment-id]').first().click();
+  const startTimeInput = page.getByText('Start Time').locator('..').locator('input');
+  await expect(startTimeInput).toHaveValue('0:00.270');
+
+  await page.getByTitle('Nudge start later by 0.05s').click();
+  await expect(startTimeInput).toHaveValue('0:00.320');
+});
+
 test('deleting a fragment removes it from content and waveform', async ({ page }) => {
   await loadEPUB(page);
 
@@ -277,15 +288,3 @@ test('HTML editor save applies changes and cancel discards them', async ({ page 
   await expect(page.locator('#root')).not.toContainText('Quatschen');
 });
 
-test('split at time divides a fragment into two', async ({ page }) => {
-  await loadEPUB(page);
-
-  const before = await currentFragmentCount(page);
-  await page.locator('[data-fragment-id]').first().click();
-
-  await page.getByPlaceholder('1:23.456').fill('0:02.000');
-  await page.getByTitle('Split at time').click();
-
-  await expect(fragmentCountText(page)).toHaveText(`${before + 1} fragments total`);
-  await expect(page.locator('[data-fragment-id$="_part1"]').first()).toBeVisible();
-});

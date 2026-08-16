@@ -202,42 +202,6 @@ export const useEPUBEditor = () => {
     }
   }, [epubData, selectedChapter, selectedFragment]);
 
-  const splitFragment = useCallback((fragmentId: string, splitTime: number) => {
-    if (!epubData || !selectedChapter) return;
-
-    const chapterData = getChapterFragments(epubData, selectedChapter);
-    if (!chapterData) return;
-
-    const { smilId, fragments } = chapterData;
-    const fragmentIndex = fragments.findIndex(f => f.id === fragmentId);
-    if (fragmentIndex === -1) return;
-
-    const originalFragment = fragments[fragmentIndex];
-    const firstFragment = {
-      ...originalFragment,
-      clipEnd: splitTime,
-      id: `${originalFragment.id}_part1`
-    };
-    const secondFragment = {
-      ...originalFragment,
-      clipBegin: splitTime,
-      id: `${originalFragment.id}_part2`,
-      order: originalFragment.order + 0.1
-    };
-
-    const updatedFragments = [
-      ...fragments.slice(0, fragmentIndex),
-      firstFragment,
-      secondFragment,
-      ...fragments.slice(fragmentIndex + 1)
-    ];
-
-    const newSmilFiles = new Map(epubData.smilFiles);
-    newSmilFiles.set(smilId, normalizeOrder(updatedFragments));
-
-    setEpubData({ ...epubData, smilFiles: newSmilFiles });
-  }, [epubData, selectedChapter]);
-
   const splitFragmentByText = useCallback((fragmentId: string, splitIndex: number): boolean => {
     if (!epubData || !selectedChapter) return false;
 
@@ -428,39 +392,6 @@ export const useEPUBEditor = () => {
     setSelectedFragment(firstFragment); // Select the first new fragment
     return true;
 
-  }, [epubData, selectedChapter]);
-
-  const addFragment = useCallback((afterId: string, newFragment: Partial<SMILFragment>) => {
-    if (!epubData || !selectedChapter) return;
-
-    const chapterData = getChapterFragments(epubData, selectedChapter);
-    if (!chapterData) return;
-
-    const { smilId, fragments } = chapterData;
-    const fragmentIndex = fragments.findIndex(f => f.id === afterId);
-    if (fragmentIndex === -1) return;
-
-    const fragment: SMILFragment = {
-      id: `${smilId}::fragment_${Date.now()}`,
-      textSrc: '',
-      audioSrc: '',
-      clipBegin: 0,
-      clipEnd: 1,
-      text: '',
-      order: fragments[fragmentIndex].order + 0.1,
-      ...newFragment
-    };
-
-    const updatedFragments = [
-      ...fragments.slice(0, fragmentIndex + 1),
-      fragment,
-      ...fragments.slice(fragmentIndex + 1)
-    ];
-
-    const newSmilFiles = new Map(epubData.smilFiles);
-    newSmilFiles.set(smilId, normalizeOrder(updatedFragments));
-
-    setEpubData({ ...epubData, smilFiles: newSmilFiles });
   }, [epubData, selectedChapter]);
 
   const applyTimeOffset = useCallback((fromTime: number, offsetSeconds: number) => {
@@ -667,9 +598,7 @@ export const useEPUBEditor = () => {
     setSelectedFragment,
     updateFragment,
     deleteFragment,
-    splitFragment,
     splitFragmentByText,
-    addFragment,
     nudgeFragmentStart,
     nudgeFragmentEnd,
     applyTimeOffset,
