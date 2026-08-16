@@ -229,38 +229,26 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
     });
     ws.on('play', () => setIsPlaying(true)); ws.on('pause', () => setIsPlaying(false)); ws.on('timeupdate', (time) => setCurrentTime(time));
 
-    regionsPluginRef.current.on('region-updated', (region) => {
-      // During drag, only update visually - don't trigger parent state updates
-      if (isDragging && draggedRegionId === region.id) {
-        return;
+    const updateRegionVisual = (id: string, opts: { start?: number, end?: number }) => {
+      const regions = regionsPluginRef.current?.getRegions();
+      const r = regions?.find(r => r.id === id);
+      if (r && typeof r.setOptions === 'function') {
+        r.setOptions(opts);
       }
+    };
 
-      // This is for programmatic updates or clicks - handle normally
-      // Find the index of the updated region
+    // Sync a region's data into state, keeping neighbor boundaries contiguous when snap is on
+    const syncRegionUpdate = (region: { id: string; start: number; end: number }) => {
       const idx = fragmentsRef.current.findIndex(f => f.id === region.id);
-      if (idx === -1) {
-        onFragmentUpdateRef.current(region.id, { clipBegin: region.start, clipEnd: region.end });
-        return;
-      }
+      if (idx === -1) return false;
 
-      // Get previous values for comparison
       const prevFragment = fragmentsRef.current[idx];
       const prevStart = prevFragment.clipBegin;
       const prevEnd = prevFragment.clipEnd;
 
-      // Always update the current region in data
       onFragmentUpdateRef.current(region.id, { clipBegin: region.start, clipEnd: region.end });
       fragmentsRef.current[idx].clipBegin = region.start;
       fragmentsRef.current[idx].clipEnd = region.end;
-
-      // Helper to update region visually
-      const updateRegionVisual = (id: string, opts: { start?: number, end?: number }) => {
-        const regions = regionsPluginRef.current?.getRegions();
-        const r = regions?.find(r => r.id === id);
-        if (r && typeof r.setOptions === 'function') {
-          r.setOptions(opts);
-        }
-      };
 
       if (isSnapEnabledRef.current) {
         // If end changed, update next region's start (only)
@@ -281,6 +269,20 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
             updateRegionVisual(prev.id, { end: region.start });
           }
         }
+      }
+
+      return true;
+    };
+
+    regionsPluginRef.current.on('region-updated', (region) => {
+      // During drag, only update visually - don't trigger parent state updates
+      if (isDragging && draggedRegionId === region.id) {
+        return;
+      }
+
+      // This is for programmatic updates or clicks - handle normally
+      if (!syncRegionUpdate(region)) {
+        onFragmentUpdateRef.current(region.id, { clipBegin: region.start, clipEnd: region.end });
       }
     });
     regionsPluginRef.current.on('region-clicked', (region, e) => {
@@ -313,46 +315,7 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
         setDraggedRegionId(null);
 
         // On drag end, update the parent state with final positions
-        const idx = fragmentsRef.current.findIndex(f => f.id === region.id);
-        if (idx !== -1) {
-          const prevFragment = fragmentsRef.current[idx];
-          const prevStart = prevFragment.clipBegin;
-          const prevEnd = prevFragment.clipEnd;
-
-          // Update current region data
-          onFragmentUpdateRef.current(region.id, { clipBegin: region.start, clipEnd: region.end });
-          fragmentsRef.current[idx].clipBegin = region.start;
-          fragmentsRef.current[idx].clipEnd = region.end;
-
-          // Helper to update region visually
-          const updateRegionVisual = (id: string, opts: { start?: number, end?: number }) => {
-            const regions = regionsPluginRef.current?.getRegions();
-            const r = regions?.find(r => r.id === id);
-            if (r && typeof r.setOptions === 'function') {
-              r.setOptions(opts);
-            }
-          };
-
-          if (isSnapEnabledRef.current) {
-            // Handle adjacent region adjustments only on drag end
-            if (Math.abs(region.end - prevEnd) > REGION_EPSILON && idx < fragmentsRef.current.length - 1) {
-              const next = fragmentsRef.current[idx + 1];
-              if (next.clipBegin !== region.end) {
-                next.clipBegin = region.end;
-                onFragmentUpdateRef.current(next.id, { clipBegin: region.end });
-                updateRegionVisual(next.id, { start: region.end });
-              }
-            }
-            if (Math.abs(region.start - prevStart) > REGION_EPSILON && idx > 0) {
-              const prev = fragmentsRef.current[idx - 1];
-              if (prev.clipEnd !== region.start) {
-                prev.clipEnd = region.start;
-                onFragmentUpdateRef.current(prev.id, { clipEnd: region.start });
-                updateRegionVisual(prev.id, { end: region.start });
-              }
-            }
-          }
-        }
+        syncRegionUpdate(region);
       }
     });
 
