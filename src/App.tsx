@@ -8,7 +8,7 @@ import { SettingsPanel } from './components/SettingsPanel';
 import { useEPUBEditor } from './hooks/useEPUBEditor';
 import { Resizer } from './components/Resizer';
 import { FragmentSpacing, isValidFragmentSpacing } from './types/epub';
-import { Upload, Loader2, PanelRightOpen, PanelRightClose, PanelLeftOpen, PanelLeftClose, Feather, Settings } from 'lucide-react';
+import { Upload, Loader2, PanelRightOpen, PanelRightClose, PanelLeftOpen, PanelLeftClose, Feather, Settings, Undo2, Redo2 } from 'lucide-react';
 import { Button, IconButton, Modal } from './components/ui';
 import { DEFAULT_CODE_THEME_ID } from './utils/codeThemes';
 import { RegionColorStyle } from './components/WaveformViewer';
@@ -150,13 +150,10 @@ const App: React.FC = () => {
     currentAudioBlob,
     exportEPUB,
     setEpubData,
-    history,
-    historyIndex,
     canUndo,
     canRedo,
     undo,
     redo,
-    goToHistory,
   } = useEPUBEditor();
 
   const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -403,6 +400,21 @@ const App: React.FC = () => {
           >
             {isLeftPanelCollapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
           </IconButton>
+          <div className="w-px h-5 bg-gray-700 mx-1" />
+          <IconButton
+            onClick={undo}
+            disabled={!canUndo}
+            title="Undo (Ctrl+Z)"
+          >
+            <Undo2 size={16} />
+          </IconButton>
+          <IconButton
+            onClick={redo}
+            disabled={!canRedo}
+            title="Redo (Ctrl+Shift+Z)"
+          >
+            <Redo2 size={16} />
+          </IconButton>
         </div>
         <div className="flex items-center gap-1">
           <IconButton
@@ -533,13 +545,6 @@ const App: React.FC = () => {
                 onFragmentDelete={deleteFragment}
                 onNudgeFragmentStart={nudgeFragmentStart}
                 onNudgeFragmentEnd={nudgeFragmentEnd}
-                history={history}
-                historyIndex={historyIndex}
-                canUndo={canUndo}
-                canRedo={canRedo}
-                onUndo={undo}
-                onRedo={redo}
-                onHistoryGoTo={goToHistory}
               />
             </div>
           </>

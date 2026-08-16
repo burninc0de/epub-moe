@@ -343,13 +343,3 @@ test('undo and redo restore a nudged timing change', async ({ page }) => {
   await expect(startTimeInput).toHaveValue('0:00.320');
 });
 
-test('history panel lists recorded operations', async ({ page }) => {
-  await loadEPUB(page);
-
-  await page.locator('[data-fragment-id]').first().click();
-  await page.getByTitle('Nudge start later by 0.05s').click();
-
-  await expect(page.getByRole('button', { name: 'Load EPUB', exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Nudge start', exact: true })).toBeVisible();
-});
-

@@ -1,8 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Clock, Minus, Plus, Trash2, Undo2, Redo2 } from 'lucide-react';
-import { EPUBData } from '../types/epub';
-import { HistoryEntry } from '../utils/history';
-import { HistoryContext } from '../hooks/useEditorHistory';
+import { Clock, Minus, Plus, Trash2 } from 'lucide-react';
 import { SMILFragment } from '../types/epub';
 import { formatTimeWithMs, parseTimeInput } from '../utils/time';
 import { Button, IconButton, PanelHeader, SectionLabel, FieldLabel, TextInput } from './ui';
@@ -14,13 +11,6 @@ interface FragmentEditorProps {
   onFragmentDelete: (fragmentId: string) => void;
   onNudgeFragmentStart: (fragmentId: string, deltaSeconds: number) => void;
   onNudgeFragmentEnd: (fragmentId: string, deltaSeconds: number) => void;
-  history: HistoryEntry<EPUBData, HistoryContext>[];
-  historyIndex: number;
-  canUndo: boolean;
-  canRedo: boolean;
-  onUndo: () => void;
-  onRedo: () => void;
-  onHistoryGoTo: (index: number) => void;
 }
 
 export const FragmentEditor: React.FC<FragmentEditorProps> = ({
@@ -30,13 +20,6 @@ export const FragmentEditor: React.FC<FragmentEditorProps> = ({
   onFragmentDelete,
   onNudgeFragmentStart,
   onNudgeFragmentEnd,
-  history,
-  historyIndex,
-  canUndo,
-  canRedo,
-  onUndo,
-  onRedo,
-  onHistoryGoTo,
 }) => {
   const [startTimeInput, setStartTimeInput] = useState('');
   const [endTimeInput, setEndTimeInput] = useState('');
@@ -174,58 +157,6 @@ export const FragmentEditor: React.FC<FragmentEditorProps> = ({
             <p className="text-sm text-gray-500">Select a fragment from the waveform or text to edit its timing</p>
           </div>
         )}
-
-        <section className="pt-5 border-t border-line mt-6">
-          <div className="flex items-center justify-between mb-3">
-            <SectionLabel>History</SectionLabel>
-            <div className="flex gap-1">
-              <IconButton
-                onClick={onUndo}
-                disabled={!canUndo}
-                title="Undo (Ctrl+Z)"
-                className="p-1.5"
-              >
-                <Undo2 className="w-4 h-4" />
-              </IconButton>
-              <IconButton
-                onClick={onRedo}
-                disabled={!canRedo}
-                title="Redo (Ctrl+Shift+Z)"
-                className="p-1.5"
-              >
-                <Redo2 className="w-4 h-4" />
-              </IconButton>
-            </div>
-          </div>
-
-          {history.length === 0 ? (
-            <p className="text-xs text-gray-500">No history yet</p>
-          ) : (
-            <ol className="max-h-48 overflow-y-auto space-y-1 -mx-2 px-2">
-              {[...history].map((entry, reverseIndex) => {
-                const index = history.length - 1 - reverseIndex;
-                const isCurrent = index === historyIndex;
-
-                return (
-                  <li key={`${entry.label}-${entry.timestamp}-${index}`}>
-                    <button
-                      onClick={() => onHistoryGoTo(index)}
-                      disabled={isCurrent}
-                      className={`w-full text-left px-2 py-1.5 rounded text-xs truncate transition-colors ${
-                        isCurrent
-                          ? 'bg-blue-500/15 text-blue-400'
-                        : 'text-gray-400 hover:bg-raised hover:text-gray-200'
-                      }`}
-                      title={entry.label}
-                    >
-                      {entry.label}
-                    </button>
-                  </li>
-                );
-              })}
-            </ol>
-          )}
-        </section>
       </div>
     </div>
   );
