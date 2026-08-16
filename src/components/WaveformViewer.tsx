@@ -28,6 +28,8 @@ interface WaveformViewerProps {
   onFragmentUpdate: (fragmentId: string, updates: Partial<SMILFragment>) => void;
   onApplyTimeOffset: (fromTime: number, offsetSeconds: number) => void;
   onForceNonOverlapping: (audioDuration: number) => void;
+  onDragStart?: () => void;
+  onDragEnd?: () => void;
   regionColorStyle?: RegionColorStyle;
 }
 
@@ -78,6 +80,8 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
   onFragmentUpdate,
   onApplyTimeOffset,
   onForceNonOverlapping,
+  onDragStart,
+  onDragEnd,
   regionColorStyle = 'modern',
 }, ref) => {
   const waveformRef = useRef<HTMLDivElement>(null);
@@ -122,10 +126,14 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
   // Refs to hold the latest callbacks
   const onFragmentSelectRef = useRef(onFragmentSelect);
   const onFragmentUpdateRef = useRef(onFragmentUpdate);
+  const onDragStartRef = useRef(onDragStart);
+  const onDragEndRef = useRef(onDragEnd);
   const isSnapEnabledRef = useRef(isSnapEnabled);
   useEffect(() => {
     onFragmentSelectRef.current = onFragmentSelect;
     onFragmentUpdateRef.current = onFragmentUpdate;
+    onDragStartRef.current = onDragStart;
+    onDragEndRef.current = onDragEnd;
   });
 
   useEffect(() => {
@@ -311,6 +319,7 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
         dragPreviousPositions[region.id] = { start: region.start, end: region.end };
         setIsDragging(true);
         setDraggedRegionId(region.id);
+        onDragStartRef.current?.();
       }
 
       // Keep neighbour boundaries visually contiguous while dragging, matching nudge behaviour.
@@ -345,6 +354,7 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
 
         // On drag end, update the parent state with final positions
         syncRegionUpdate(region, original);
+        onDragEndRef.current?.();
       }
     });
 

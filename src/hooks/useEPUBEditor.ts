@@ -60,6 +60,8 @@ export const useEPUBEditor = () => {
   const selectedChapterRef = useRef<string | null>(null);
   const selectedFragmentRef = useRef<SMILFragment | null>(null);
   const lastAudioFileBlobRef = useRef<Blob | null>(null);
+  const skipHistoryRef = useRef(false);
+  const pendingHistoryLabelRef = useRef<string | null>(null);
 
   const {
     history,
@@ -92,7 +94,31 @@ export const useEPUBEditor = () => {
       afterContext: HistoryContext,
       label: string
     ) => {
+      if (skipHistoryRef.current) {
+        pendingHistoryLabelRef.current = label;
+        return;
+      }
       record(data, beforeContext, afterContext, label);
+    },
+    [record]
+  );
+
+  const setHistoryPaused = useCallback((paused: boolean) => {
+    skipHistoryRef.current = paused;
+    if (!paused) {
+      pendingHistoryLabelRef.current = null;
+    }
+  }, []);
+
+  const commitHistory = useCallback(
+    (label: string) => {
+      if (!epubDataRef.current) return;
+      const context: HistoryContext = {
+        chapterId: selectedChapterRef.current,
+        fragmentId: selectedFragmentRef.current?.id ?? null,
+      };
+      record(epubDataRef.current, context, context, pendingHistoryLabelRef.current ?? label);
+      pendingHistoryLabelRef.current = null;
     },
     [record]
   );
@@ -808,5 +834,7 @@ export const useEPUBEditor = () => {
     undo,
     redo,
     goToHistory,
+    setHistoryPaused,
+    commitHistory,
   };
 };

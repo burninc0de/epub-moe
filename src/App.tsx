@@ -154,6 +154,8 @@ const App: React.FC = () => {
     canRedo,
     undo,
     redo,
+    setHistoryPaused,
+    commitHistory,
   } = useEPUBEditor();
 
   const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -175,6 +177,15 @@ const App: React.FC = () => {
       setIsLoadingExport(false);
     }
   }, [exportEPUB]);
+
+  const handleWaveformDragStart = useCallback(() => {
+    setHistoryPaused(true);
+  }, [setHistoryPaused]);
+
+  const handleWaveformDragEnd = useCallback(() => {
+    setHistoryPaused(false);
+    commitHistory('Drag boundary');
+  }, [setHistoryPaused, commitHistory]);
 
   // Global hotkey for Spacebar, arrows, and other shortcuts
   useEffect(() => {
@@ -565,6 +576,8 @@ const App: React.FC = () => {
               onFragmentUpdate={updateFragment}
               onApplyTimeOffset={applyTimeOffset}
               onForceNonOverlapping={(audioDuration) => forceNonOverlappingFragments(audioDuration)}
+              onDragStart={handleWaveformDragStart}
+              onDragEnd={handleWaveformDragEnd}
               regionColorStyle={regionColorStyle}
             />
           </div>
