@@ -82,8 +82,10 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
   const waveformRef = useRef<HTMLDivElement>(null);
   const wavesurfer = useRef<WaveSurfer | null>(null);
   const regionsPluginRef = useRef<RegionsPlugin | null>(null);
-  const fragmentsRef = useRef<SMILFragment[]>(fragments);
-  useEffect(() => { fragmentsRef.current = fragments; }, [fragments]);
+  // Working copy for WaveSurfer event handlers: detached from the props array
+  // so in-drag mutations never alias props-derived state.
+  const fragmentsRef = useRef<SMILFragment[]>(fragments.map(f => ({ ...f })));
+  useEffect(() => { fragmentsRef.current = fragments.map(f => ({ ...f })); }, [fragments]);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [zoomLevel, setZoomLevel] = useState(() => {
