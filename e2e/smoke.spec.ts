@@ -266,6 +266,30 @@ test('dragged boundary snap is preserved in exported EPUB', async ({ page }) => 
   expect(Math.abs(firstEnd - secondStart)).toBeLessThan(0.01);
 });
 
+test('undo reverts a dragged boundary as one history step', async ({ page }) => {
+  await loadEPUB(page);
+
+  const regions = page.locator('.waveform-scroll [part~="region"]');
+  await expect(regions.first()).toBeVisible({ timeout: 10000 });
+
+  const firstRegion = regions.nth(0);
+  const before = await regionStyle(firstRegion);
+
+  const handle = firstRegion.locator('[part~="region-handle-right"]');
+  await expect(handle).toBeVisible();
+  const box = await handle.boundingBox();
+  expect(box).toBeTruthy();
+  await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box!.x + box!.width / 2 - 40, box!.y + box!.height / 2, { steps: 10 });
+  await page.mouse.up();
+
+  await expect.poll(() => regionStyle(firstRegion).then((s) => s.right)).toBeGreaterThan(before.right + 0.25);
+
+  await page.getByTitle('Undo (Ctrl+Z)').click();
+  await expect.poll(() => regionStyle(firstRegion).then((s) => s.right)).toBeLessThan(before.right + 0.05);
+});
+
 test('force align rewrites fragments to continuous coverage', async ({ page }) => {
   await loadEPUB(page);
 
