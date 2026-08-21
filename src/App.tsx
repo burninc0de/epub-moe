@@ -196,6 +196,17 @@ const App: React.FC = () => {
   const canUndoRef = useRef(canUndo);
   useEffect(() => { canUndoRef.current = canUndo; }, [canUndo]);
 
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (canUndoRef.current) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, []);
+
   const canRedoRef = useRef(canRedo);
   useEffect(() => { canRedoRef.current = canRedo; }, [canRedo]);
 
