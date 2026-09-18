@@ -6,6 +6,26 @@ import { parseTimeInput } from './time';
 const XHTML_MEDIA_TYPE = 'application/xhtml+xml';
 const SMIL_MEDIA_TYPE = 'application/smil+xml';
 
+/** The named entities that actually turn up in book text. */
+const NAMED_ENTITIES: Record<string, string> = {
+  amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ', shy: '',
+  hellip: '…', mdash: '—', ndash: '–', times: '×', middot: '·',
+  lsquo: '‘', rsquo: '’', ldquo: '“', rdquo: '”', bdquo: '„',
+  laquo: '«', raquo: '»', sbquo: '‚', prime: '′', Prime: '″',
+  auml: 'ä', ouml: 'ö', uuml: 'ü', Auml: 'Ä', Ouml: 'Ö', Uuml: 'Ü', szlig: 'ß',
+};
+
+/** Decode numeric and common named HTML entities. Unknown entities are left alone. */
+export const decodeEntities = (text: string): string =>
+  text
+    .replace(/&#x([0-9a-f]+);/gi, (_, hex: string) => String.fromCodePoint(parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_, dec: string) => String.fromCodePoint(parseInt(dec, 10)))
+    .replace(/&([a-z][a-z0-9]*);/gi, (match, name: string) => NAMED_ENTITIES[name] ?? NAMED_ENTITIES[name.toLowerCase()] ?? match);
+
+/** Strip tags and collapse whitespace, so markup becomes readable text. */
+export const toPlainText = (html: string): string =>
+  decodeEntities(html.replace(/<[^>]*>/g, ' ')).replace(/\s+/g, ' ').trim();
+
 export const resolvePath = (from: string, to: string): string => {
   const fromParts = from.split('/').slice(0, -1);
   const toParts = to.split('/');
@@ -174,9 +194,28 @@ export class EPUBParser {
     return audioFiles;
   }
 
+  /**
+   * A chapter's name is its first heading — `<h3>5. Frühstück</h3>` — with the
+   * markup inside it flattened.
+   *
+   * Any heading level counts, not just h1-h3: these books label their exercise
+   * sections `<h4>Übung</h4>`. Headings with no words in them (a `~` or `***`
+   * separator) are skipped so a decorative rule cannot become the title.
+   *
+   * `<title>` is deliberately NOT used as a fallback. In these files it holds the
+   * *book* title, so it labelled every chapter identically — and comparing it
+   * against the metadata title to detect that is fragile: the book's `dc:title`
+   * uses a hyphen where the chapter's `<title>` uses an en dash, so the equality
+   * check silently failed. No heading means the caller shows the file path.
+   */
   private extractTitle(htmlContent: string): string | null {
-    const titleMatch = htmlContent.match(/<title[^>]*>([^<]*)<\/title>/i);
-    return titleMatch ? titleMatch[1].trim() : null;
+    // Ignore the head: <title> lives there, headings do not.
+    const body = htmlContent.replace(/<head[\s\S]*?<\/head>/i, '');
+    for (const match of body.matchAll(/<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/gi)) {
+      const text = toPlainText(match[1]);
+      if (/[\p{L}\p{N}]/u.test(text)) return text;
+    }
+    return null;
   }
 
   private calculateBasePath(): string {

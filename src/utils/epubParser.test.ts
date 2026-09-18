@@ -77,3 +77,75 @@ describe('EPUBParser.parse', () => {
     expect(fragments[1].clipEnd).toBeCloseTo(3.5);
   });
 });
+
+describe('chapter titles', () => {
+  /** A minimal EPUB whose single chapter has the given HTML. */
+  const zipWithChapter = (chapterHtml: string) => {
+    const zip = new JSZip();
+    zip.file('META-INF/container.xml', `<?xml version="1.0"?>
+<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+  <rootfiles><rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/></rootfiles>
+</container>`);
+    zip.file('OEBPS/content.opf', `<?xml version="1.0"?>
+<package xmlns="http://www.idpf.org/2007/opf" version="3.0">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title>Test Book</dc:title></metadata>
+  <manifest><item id="ch1" href="Text/ch1.xhtml" media-type="application/xhtml+xml"/></manifest>
+  <spine><itemref idref="ch1"/></spine>
+</package>`);
+    zip.file('OEBPS/Text/ch1.xhtml', chapterHtml);
+    return zip;
+  };
+
+  const titleOf = async (chapterHtml: string) => {
+    const data = await new EPUBParser(zipWithChapter(chapterHtml)).parse();
+    return data.chapters[0].title;
+  };
+
+  it('uses the first heading rather than the document title', async () => {
+    const title = await titleOf(
+      '<html><head><title>Test Book</title></head><body><h3>5. Frühstück</h3><p>Text</p></body></html>'
+    );
+    expect(title).toBe('5. Frühstück');
+  });
+
+  it('flattens nested markup in the heading', async () => {
+    const title = await titleOf(
+      '<html><body><h3 class="header"><span>5.</span> <span>Frühstück</span></h3></body></html>'
+    );
+    expect(title).toBe('5. Frühstück');
+  });
+
+  it('decodes entities in the heading', async () => {
+    const title = await titleOf('<html><body><h1>1. &bdquo;Twittern&ldquo; &amp; mehr</h1></body></html>');
+    expect(title).toBe('1. „Twittern“ & mehr');
+  });
+
+  it('picks the first heading when a chapter has several', async () => {
+    const title = await titleOf('<html><body><h1>First</h1><h2>Second</h2></body></html>');
+    expect(title).toBe('First');
+  });
+
+  it('accepts deeper headings, which these books use for exercises', async () => {
+    const title = await titleOf('<html><body><h4>Übung</h4></body></html>');
+    expect(title).toBe('Übung');
+  });
+
+  it('skips a decorative heading with no words in it', async () => {
+    const title = await titleOf('<html><body><h5>~</h5><h3>Real Title</h3></body></html>');
+    expect(title).toBe('Real Title');
+  });
+
+  it('ignores <title>, which holds the book name in these files', async () => {
+    // The regression this guards: every chapter was labelled with the book
+    // title, because <title> repeats it and differs from dc:title by an en dash.
+    const title = await titleOf(
+      '<html><head><title>Test Book</title></head><body><p>No heading here</p></body></html>'
+    );
+    expect(title).toBe('Text/ch1.xhtml');
+  });
+
+  it('falls back to the file path when there is no heading', async () => {
+    const title = await titleOf('<html><body><h1>   </h1></body></html>');
+    expect(title).toBe('Text/ch1.xhtml');
+  });
+});

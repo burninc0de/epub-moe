@@ -36,7 +36,9 @@ export const ChapterList: React.FC<ChapterListProps> = ({
                   : 'text-gray-300 hover:bg-raised hover:text-gray-100'
               }`}
             >
-              <span className="flex-1 min-w-0 truncate text-left">{chapter.href}</span>
+              <span className="flex-1 min-w-0 truncate text-left" title={chapter.href}>
+                {chapter.title || chapter.href}
+              </span>
               {chapter.mediaOverlay && (
                 <Volume2 className={`w-3.5 h-3.5 flex-shrink-0 ${isSelected ? 'text-blue-400' : 'text-gray-500'}`} />
               )}

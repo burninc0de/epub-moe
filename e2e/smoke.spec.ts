@@ -339,15 +339,18 @@ test('HTML editor save applies changes and cancel discards them', async ({ page 
   await editor.fill(html.split('Twittern').join('Plaudern'));
   await page.getByRole('button', { name: 'Save' }).click();
 
-  await expect(page.locator('#root')).toContainText('Plaudern');
-  await expect(page.locator('#root')).not.toContainText('Twittern');
+  // Scope to the chapter body: the sidebar shows the chapter's heading, so
+  // asserting on #root would match the sidebar's copy of the same word.
+  const content = page.locator('.content-viewer');
+  await expect(content).toContainText('Plaudern');
+  await expect(content).not.toContainText('Twittern');
 
   await codeButton.click();
   await editor.fill((await editor.inputValue()).split('Plaudern').join('Quatschen'));
   await page.getByRole('button', { name: 'Cancel' }).click();
 
-  await expect(page.locator('#root')).toContainText('Plaudern');
-  await expect(page.locator('#root')).not.toContainText('Quatschen');
+  await expect(content).toContainText('Plaudern');
+  await expect(content).not.toContainText('Quatschen');
 });
 
 test('undo and redo restore a nudged timing change', async ({ page }) => {
