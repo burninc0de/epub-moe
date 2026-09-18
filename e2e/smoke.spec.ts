@@ -476,3 +476,66 @@ test('chapter labels can be switched between headings and file names', async ({ 
   await expect(page.locator('.waveform-scroll [part~="region"]').first()).toBeVisible({ timeout: 10000 });
   await expect(page.locator('.bg-panel.border-r').first()).toContainText('1. „Twittern kann jeder“');
 });
+
+test('right-clicking an audio chapter offers to mark it finished', async ({ page }) => {
+  await loadEPUB(page);
+
+  const chapter = page.locator('.bg-panel.border-r').first().getByRole('button', { name: /Twittern/ });
+  await expect(chapter.locator('svg')).toHaveClass(/lucide-volume2/);
+
+  await chapter.click({ button: 'right' });
+  await expect(page.getByRole('menuitem', { name: 'Mark as finished' })).toBeVisible();
+
+  await page.getByRole('menuitem', { name: 'Mark as finished' }).click();
+  await expect(page.getByRole('menuitem')).toHaveCount(0);
+  await expect(chapter.locator('svg')).toHaveClass(/lucide-check-circle2/);
+});
+
+test('a finished chapter can be unmarked again', async ({ page }) => {
+  await loadEPUB(page);
+
+  const chapter = page.locator('.bg-panel.border-r').first().getByRole('button', { name: /Twittern/ });
+
+  await chapter.click({ button: 'right' });
+  await page.getByRole('menuitem', { name: 'Mark as finished' }).click();
+  await expect(chapter.locator('svg')).toHaveClass(/lucide-check-circle2/);
+
+  await chapter.click({ button: 'right' });
+  await page.getByRole('menuitem', { name: 'Mark as not finished' }).click();
+  await expect(chapter.locator('svg')).toHaveClass(/lucide-volume2/);
+});
+
+test('the context menu dismisses without choosing', async ({ page }) => {
+  await loadEPUB(page);
+
+  const chapter = page.locator('.bg-panel.border-r').first().getByRole('button', { name: /Twittern/ });
+
+  await chapter.click({ button: 'right' });
+  await expect(page.getByRole('menuitem')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('menuitem')).toHaveCount(0);
+
+  await chapter.click({ button: 'right' });
+  await expect(page.getByRole('menuitem')).toBeVisible();
+  await page.locator('.content-viewer').click({ position: { x: 10, y: 10 } });
+  await expect(page.getByRole('menuitem')).toHaveCount(0);
+
+  // Dismissing must not have marked anything.
+  await expect(chapter.locator('svg')).toHaveClass(/lucide-volume2/);
+});
+
+test('finished chapters persist per book across a reload', async ({ page }) => {
+  await loadEPUB(page);
+
+  const chapter = page.locator('.bg-panel.border-r').first().getByRole('button', { name: /Twittern/ });
+  await chapter.click({ button: 'right' });
+  await page.getByRole('menuitem', { name: 'Mark as finished' }).click();
+  await expect(chapter.locator('svg')).toHaveClass(/lucide-check-circle2/);
+
+  await page.reload();
+  await page.setInputFiles('input[type="file"][accept=".epub"]', FIXTURE);
+  await expect(page.locator('.waveform-scroll [part~="region"]').first()).toBeVisible({ timeout: 10000 });
+
+  const reloaded = page.locator('.bg-panel.border-r').first().getByRole('button', { name: /Twittern/ });
+  await expect(reloaded.locator('svg')).toHaveClass(/lucide-check-circle2/);
+});
