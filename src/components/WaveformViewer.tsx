@@ -2,10 +2,11 @@ import { useEffect, useRef, useState, useCallback, forwardRef, useImperativeHand
 
 import WaveSurfer from 'wavesurfer.js';
 import RegionsPlugin from 'wavesurfer.js/dist/plugins/regions.js';
-import { Play, Pause, Square, ZoomIn, ZoomOut, RotateCcw, Clock, Magnet, AlertTriangle, ChevronLeft, ChevronRight, Volume2, VolumeX } from 'lucide-react';
+import { Play, Pause, Square, ZoomIn, ZoomOut, RotateCcw, Clock, Magnet, AlertTriangle, ChevronLeft, ChevronRight, Volume2, VolumeX, Wand2 } from 'lucide-react';
 import { SMILFragment } from '../types/epub';
 import { snapFragmentBoundaries } from '../utils/fragmentSnap';
-import { formatTime, parseTimeInput } from '../utils/time';
+import { analyzeAlignment, boundariesFromFragments, describeAnalysis, envelopeFromAudioBuffer, type AlignmentAnalysis, type Envelope } from '../utils/alignmentAnalysis';
+import { formatTime, formatTimeWithMs, parseTimeInput } from '../utils/time';
 import { Button, IconButton, FieldLabel, TextInput, ToolbarDivider, Modal } from './ui';
 
 const REGION_EPSILON = 0.01; // 10ms tolerance for floating point imprecision
@@ -107,6 +108,11 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
   const eqLevels = useEqLevels(EQ_BAR_COUNT, 120, isWaveformLoading);
   const [isSnapEnabled, setIsSnapEnabled] = useState(true);
   const [showForceNonOverlapDialog, setShowForceNonOverlapDialog] = useState(false);
+  const [analysis, setAnalysis] = useState<AlignmentAnalysis | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  // The envelope is the expensive part (~10-30M multiply-adds for a chapter);
+  // cache it per audio blob so re-checking after an edit is instant.
+  const envelopeCacheRef = useRef<{ blob: Blob; envelope: Envelope } | null>(null);
   const [volume, setVolume] = useState<number>(() => {
     const stored = parseFloat(localStorage.getItem(VOLUME_KEY) ?? '');
     if (!Number.isFinite(stored)) return DEFAULT_VOLUME;
@@ -544,6 +550,36 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
     setShowOffsetDialog(true);
   };
 
+  const handleAutoCalibrate = () => {
+    const ws = wavesurfer.current;
+    const buffer = ws?.getDecodedData();
+    if (!buffer) return;
+
+    setIsAnalyzing(true);
+    // Yield once so the button can paint its busy state before we block the
+    // main thread computing the envelope.
+    window.setTimeout(() => {
+      try {
+        if (envelopeCacheRef.current?.blob !== audioBlob) {
+          envelopeCacheRef.current = { blob: audioBlob, envelope: envelopeFromAudioBuffer(buffer) };
+        }
+        const boundaries = boundariesFromFragments(fragmentsRef.current);
+        setAnalysis(analyzeAlignment(envelopeCacheRef.current.envelope, boundaries));
+      } catch (error) {
+        console.error('Auto calibrate failed:', error);
+      } finally {
+        setIsAnalyzing(false);
+      }
+    }, 0);
+  };
+
+  const applySuggestedOffset = () => {
+    if (!analysis) return;
+    // fromTime 0 shifts every fragment in the chapter by the same amount.
+    onApplyTimeOffset(0, analysis.bestOffsetSeconds);
+    setAnalysis(null);
+  };
+
   // In the auto-selection effect, also highlight the region
   useEffect(() => {
     // Suppress auto-selection if user just clicked a region
@@ -605,6 +641,14 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
           <div className="flex items-center gap-1">
             <IconButton onClick={handleOffsetFromCursor} title="Apply Time Offset">
               <Clock className="w-4 h-4" />
+            </IconButton>
+            <IconButton
+              onClick={handleAutoCalibrate}
+              disabled={isWaveformLoading || isAnalyzing}
+              active={isAnalyzing}
+              title="Auto calibrate: find a global offset that puts boundaries in the pauses"
+            >
+              <Wand2 className="w-4 h-4" />
             </IconButton>
             <IconButton
               onClick={() => setShowForceNonOverlapDialog(true)}
@@ -706,6 +750,98 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
               <Button variant="primary" onClick={handleApplyOffset}>
                 Apply Offset
               </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {analysis && (
+        <Modal title="Auto Calibrate" onClose={() => setAnalysis(null)} className="max-w-md">
+          <div className="space-y-4">
+            <p className="text-sm text-gray-300">{describeAnalysis(analysis)}</p>
+
+            <div className="text-xs text-gray-500 space-y-1">
+              <div>
+                Speech level {analysis.speechLevelDb.toFixed(1)} dBFS; anything above{' '}
+                {analysis.cutThresholdDb.toFixed(1)} dBFS counts as cutting through speech.
+              </div>
+              <div>Checked {analysis.total} fragment boundaries.</div>
+            </div>
+
+            {analysis.flagged.length > 0 && (
+              <div className="text-xs text-gray-400 space-y-1 max-h-40 overflow-y-auto border border-line rounded-md p-2">
+                <div className="text-gray-500 mb-1">
+                  Still cutting speech after the shift — click one to jump to it:
+                </div>
+                {analysis.flagged.slice(0, 20).map((flag) => {
+                  const fragment = fragments.find((f) => f.id === flag.id);
+                  return (
+                    <button
+                      key={flag.id}
+                      type="button"
+                      title={flag.id}
+                      onClick={() => {
+                        setAnalysis(null);
+                        if (fragment) selectAndSeekFragment(fragment);
+                      }}
+                      className="w-full flex items-baseline justify-between gap-3 px-1.5 py-1 rounded text-left hover:bg-raised"
+                    >
+                      <span className="truncate text-gray-300">
+                        {fragment?.text?.trim().slice(0, 48) || flag.id}
+                      </span>
+                      <span className="tabular-nums text-gray-500 shrink-0">
+                        {formatTimeWithMs(flag.time)}
+                        {flag.suggestedTime === null || flag.shiftMs === null
+                          ? ' · no pause nearby'
+                          : ` → ${formatTimeWithMs(flag.suggestedTime)} (${Math.round(flag.shiftMs)}ms)`}
+                      </span>
+                    </button>
+                  );
+                })}
+                {analysis.flagged.length > 20 && (
+                  <div className="text-gray-500">…and {analysis.flagged.length - 20} more</div>
+                )}
+              </div>
+            )}
+
+            {analysis.marginal.length > 0 && (
+              <details className="text-xs text-gray-500">
+                <summary className="cursor-pointer select-none">
+                  {analysis.marginal.length} marginal boundary
+                  {analysis.marginal.length === 1 ? '' : 'ies'} (under 40ms out of place, inaudible)
+                </summary>
+                <div className="mt-1 space-y-0.5 max-h-32 overflow-y-auto border border-line rounded-md p-1">
+                  {analysis.marginal.slice(0, 20).map((flag) => {
+                    const fragment = fragments.find((f) => f.id === flag.id);
+                    return (
+                      <button
+                        key={flag.id}
+                        type="button"
+                        title={flag.id}
+                        onClick={() => {
+                          setAnalysis(null);
+                          if (fragment) selectAndSeekFragment(fragment);
+                        }}
+                        className="w-full flex items-baseline justify-between gap-3 px-1.5 py-1 rounded text-left hover:bg-raised"
+                      >
+                        <span className="truncate">{fragment?.text?.trim().slice(0, 48) || flag.id}</span>
+                        <span className="tabular-nums shrink-0">{formatTimeWithMs(flag.time)}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </details>
+            )}
+
+            <div className="flex gap-2 justify-end">
+              <Button variant="ghost" onClick={() => setAnalysis(null)}>
+                Close
+              </Button>
+              {analysis.bestOffsetSeconds !== 0 && (
+                <Button variant="primary" onClick={applySuggestedOffset}>
+                  Shift by {Math.round(analysis.bestOffsetSeconds * 1000)}ms
+                </Button>
+              )}
             </div>
           </div>
         </Modal>

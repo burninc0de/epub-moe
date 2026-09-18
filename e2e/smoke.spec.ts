@@ -384,3 +384,69 @@ test('undo and redo keyboard shortcuts restore a nudged timing change', async ({
   await expect(startTimeInput).toHaveValue('0:00.320');
 });
 
+
+test('auto calibrate reports an analysis of the chapter boundaries', async ({ page }) => {
+  await loadEPUB(page);
+
+  // Wait for the waveform and its regions before the analysis can run.
+  await expect(page.locator('.waveform-scroll [part~="region"]').first()).toBeVisible({ timeout: 10000 });
+
+  await page.getByTitle(/Auto calibrate/).click();
+
+  await expect(page.getByText('Auto Calibrate')).toBeVisible({ timeout: 15000 });
+  await expect(page.getByText(/Checked \d+ fragment boundaries/)).toBeVisible();
+  await expect(page.getByText(/Speech level/)).toBeVisible();
+
+  // Either it proposes a shift, or it reports the chapter is already good.
+  const shiftButton = page.getByRole('button', { name: /Shift by/ });
+  const verdict = page.getByText(/looks good|already at the best offset|Shift everything by/);
+  await expect(verdict).toBeVisible();
+  expect(await shiftButton.count()).toBeLessThanOrEqual(1);
+});
+
+const parseClock = (t: string) => {
+  const [m, s] = t.split(':');
+  return parseFloat(m) * 60 + parseFloat(s);
+};
+
+const applyClockOffset = async (page: import('@playwright/test').Page, fromTime: string, offset: string) => {
+  await page.getByTitle('Apply Time Offset').click();
+  await page.getByText('From Time').locator('..').locator('input').fill(fromTime);
+  await page.getByText(/Offset \(seconds/).locator('..').locator('input').fill(offset);
+  await page.getByRole('button', { name: 'Apply Offset' }).click();
+};
+
+test('auto calibrate detects a deliberate global shift and corrects it', async ({ page }) => {
+  await loadEPUB(page);
+
+  await expect(page.locator('.waveform-scroll [part~="region"]').first()).toBeVisible({ timeout: 10000 });
+  await page.locator('[data-fragment-id]').first().click();
+  const startInput = page.getByText('Start Time').locator('..').locator('input');
+  const original = parseClock(await startInput.inputValue());
+
+  // Create a known misalignment, so a global shift is definitely the right fix.
+  await applyClockOffset(page, '0:00', '0.3');
+  await expect.poll(async () => parseClock(await startInput.inputValue())).toBeGreaterThan(original + 0.2);
+
+  // Auto calibrate must notice and propose moving them back.
+  await page.getByTitle(/Auto calibrate/).click();
+  await expect(page.getByText('Auto Calibrate')).toBeVisible({ timeout: 15000 });
+
+  const shiftButton = page.getByRole('button', { name: /Shift by (-?\d+)ms/ });
+  await expect(shiftButton).toBeVisible();
+  const shiftMs = parseInt(((await shiftButton.textContent()) ?? '').match(/(-?\d+)ms/)?.[1] ?? '0', 10);
+  expect(shiftMs).toBeLessThan(0);
+
+  // The proposal must be a genuine improvement, judged by its own numbers.
+  const summary = (await page.getByText(/cutting speech/).textContent()) ?? '';
+  const parsed = summary.match(/(\d+) → (\d+) of (\d+)/);
+  expect(parsed, `unexpected summary: ${summary}`).toBeTruthy();
+  const [, before, after] = parsed!.map(Number);
+  expect(after).toBeLessThan(before);
+
+  await shiftButton.click();
+  await expect(page.getByText('Auto Calibrate')).toHaveCount(0);
+
+  // And the fragments should land back near where they started.
+  await expect.poll(async () => parseClock(await startInput.inputValue())).toBeLessThan(original + 0.15);
+});
