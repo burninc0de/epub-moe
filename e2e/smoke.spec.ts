@@ -453,3 +453,26 @@ test('auto calibrate detects a deliberate global shift and corrects it', async (
   // And the fragments should land back near where they started.
   await expect.poll(async () => parseClock(await startInput.inputValue())).toBeLessThan(original + 0.15);
 });
+
+test('chapter labels can be switched between headings and file names', async ({ page }) => {
+  await loadEPUB(page);
+
+  const sidebar = page.locator('.bg-panel.border-r').first();
+  // Default: the chapter's own heading.
+  await expect(sidebar).toContainText('1. „Twittern kann jeder“');
+  await expect(sidebar).not.toContainText('Text/Kapitel01.html');
+
+  await page.getByTitle('Settings').click();
+  await page.getByRole('button', { name: 'File names' }).click();
+  await expect(sidebar).toContainText('Text/Kapitel01.html');
+
+  // And back.
+  await page.getByRole('button', { name: 'Headings' }).click();
+  await expect(sidebar).toContainText('1. „Twittern kann jeder“');
+
+  // The choice is remembered.
+  await page.reload();
+  await page.setInputFiles('input[type="file"][accept=".epub"]', FIXTURE);
+  await expect(page.locator('.waveform-scroll [part~="region"]').first()).toBeVisible({ timeout: 10000 });
+  await expect(page.locator('.bg-panel.border-r').first()).toContainText('1. „Twittern kann jeder“');
+});

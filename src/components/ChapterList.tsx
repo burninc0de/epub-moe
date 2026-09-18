@@ -1,6 +1,6 @@
 import React from 'react';
 import { Volume2 } from 'lucide-react';
-import { EPUBChapter } from '../types/epub';
+import { EPUBChapter, ChapterLabelMode } from '../types/epub';
 import { PanelHeader } from './ui';
 
 interface ChapterListProps {
@@ -9,6 +9,7 @@ interface ChapterListProps {
   selectedChapter: string | null;
   onChapterSelect: (chapterId: string) => void;
   onlyAudioChapters?: boolean;
+  labelMode?: ChapterLabelMode;
 }
 
 export const ChapterList: React.FC<ChapterListProps> = ({
@@ -17,8 +18,17 @@ export const ChapterList: React.FC<ChapterListProps> = ({
   selectedChapter,
   onChapterSelect,
   onlyAudioChapters = false,
+  labelMode = 'title',
 }) => {
   const visibleChapters = onlyAudioChapters ? chapters.filter(c => c.mediaOverlay) : chapters;
+
+  // Show the other label as a tooltip, so neither is ever hidden.
+  const labelFor = (chapter: EPUBChapter) => {
+    if (labelMode === 'filename') return chapter.href;
+    return chapter.title || chapter.href;
+  };
+  const tooltipFor = (chapter: EPUBChapter) =>
+    labelMode === 'filename' ? chapter.title || chapter.href : chapter.href;
   return (
     <div className="bg-panel border-r border-line flex flex-col h-full">
       <PanelHeader title={title} />
@@ -36,8 +46,8 @@ export const ChapterList: React.FC<ChapterListProps> = ({
                   : 'text-gray-300 hover:bg-raised hover:text-gray-100'
               }`}
             >
-              <span className="flex-1 min-w-0 truncate text-left" title={chapter.href}>
-                {chapter.title || chapter.href}
+              <span className="flex-1 min-w-0 truncate text-left" title={tooltipFor(chapter)}>
+                {labelFor(chapter)}
               </span>
               {chapter.mediaOverlay && (
                 <Volume2 className={`w-3.5 h-3.5 flex-shrink-0 ${isSelected ? 'text-blue-400' : 'text-gray-500'}`} />

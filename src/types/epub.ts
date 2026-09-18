@@ -72,6 +72,22 @@ export interface EPUBData {
 
 export type FragmentSpacing = 'default' | 'wide' | 'spaced';
 
+/**
+ * How chapters are labelled in the sidebar.
+ * `title` derives the name from the chapter's first heading; `filename` shows
+ * the path inside the EPUB. Headings are the friendlier default, but the path
+ * is unambiguous when a book's markup is unhelpful.
+ */
+export type ChapterLabelMode = 'title' | 'filename';
+
+export const CHAPTER_LABEL_OPTIONS: { value: ChapterLabelMode; label: string }[] = [
+  { value: 'title', label: 'Headings' },
+  { value: 'filename', label: 'File names' },
+];
+
+export const isValidChapterLabelMode = (value: string | null): value is ChapterLabelMode =>
+  value === 'title' || value === 'filename';
+
 export const FRAGMENT_SPACING_CLASSES: Record<FragmentSpacing, string> = {
   default: 'my-2',
   wide: 'my-5',

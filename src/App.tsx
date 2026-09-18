@@ -7,7 +7,7 @@ import { FragmentEditor } from './components/FragmentEditor';
 import { SettingsPanel } from './components/SettingsPanel';
 import { useEPUBEditor } from './hooks/useEPUBEditor';
 import { Resizer } from './components/Resizer';
-import { FragmentSpacing, isValidFragmentSpacing } from './types/epub';
+import { FragmentSpacing, isValidFragmentSpacing, ChapterLabelMode, isValidChapterLabelMode } from './types/epub';
 import { Upload, Loader2, PanelRightOpen, PanelRightClose, PanelLeftOpen, PanelLeftClose, Feather, Settings, Undo2, Redo2 } from 'lucide-react';
 import { Button, IconButton, Modal } from './components/ui';
 import { DEFAULT_CODE_THEME_ID } from './utils/codeThemes';
@@ -24,6 +24,7 @@ const RIGHT_PANEL_COLLAPSED_KEY = 'rightPanelCollapsed';
 const CODE_THEME_KEY = 'codeTheme';
 const REGION_COLOR_STYLE_KEY = 'regionColorStyle';
 const STATUS_BAR_KEY = 'statusBar';
+const CHAPTER_LABEL_KEY = 'chapterLabelMode';
 const NUDGE_STEP_KEY = 'nudgeStep';
 const MIN_NUDGE_STEP = 0.005;
 const MAX_NUDGE_STEP = 5;
@@ -67,6 +68,10 @@ const App: React.FC = () => {
     return stored === 'classic' ? 'classic' : 'modern';
   });
   const [showStatusBar, setShowStatusBar] = useState(() => localStorage.getItem(STATUS_BAR_KEY) !== 'false');
+  const [chapterLabelMode, setChapterLabelMode] = useState<ChapterLabelMode>(() => {
+    const stored = localStorage.getItem(CHAPTER_LABEL_KEY);
+    return isValidChapterLabelMode(stored) ? stored : 'title';
+  });
   const [nudgeStep, setNudgeStep] = useState(() => {
     const stored = parseFloat(localStorage.getItem(NUDGE_STEP_KEY) ?? '');
     if (!Number.isFinite(stored)) return DEFAULT_NUDGE_STEP;
@@ -362,6 +367,11 @@ const App: React.FC = () => {
     localStorage.setItem(STATUS_BAR_KEY, String(value));
   }, []);
 
+  const handleChapterLabelModeChange = useCallback((value: ChapterLabelMode) => {
+    setChapterLabelMode(value);
+    localStorage.setItem(CHAPTER_LABEL_KEY, value);
+  }, []);
+
   const handleNudgeStepChange = useCallback((value: number) => {
     const clamped = Math.min(MAX_NUDGE_STEP, Math.max(MIN_NUDGE_STEP, value));
     setNudgeStep(clamped);
@@ -543,6 +553,7 @@ const App: React.FC = () => {
                 selectedChapter={selectedChapter}
                 onChapterSelect={setSelectedChapter}
                 onlyAudioChapters={onlyAudioChapters}
+                labelMode={chapterLabelMode}
               />
             </div>
 
@@ -644,6 +655,8 @@ const App: React.FC = () => {
             onRegionColorStyleChange={handleRegionColorStyleChange}
             showStatusBar={showStatusBar}
             onShowStatusBarChange={handleShowStatusBarChange}
+            chapterLabelMode={chapterLabelMode}
+            onChapterLabelModeChange={handleChapterLabelModeChange}
             nudgeStep={nudgeStep}
             onNudgeStepChange={handleNudgeStepChange}
             defaultNudgeStep={DEFAULT_NUDGE_STEP}

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Github } from 'lucide-react';
 import { version } from '../../package.json';
-import { FragmentSpacing, FRAGMENT_SPACING_OPTIONS } from '../types/epub';
+import { FragmentSpacing, FRAGMENT_SPACING_OPTIONS, ChapterLabelMode, CHAPTER_LABEL_OPTIONS } from '../types/epub';
 import { CODE_THEMES } from '../utils/codeThemes';
 import { RegionColorStyle } from './WaveformViewer';
 import { Button, Select, TextInput } from './ui';
@@ -13,6 +13,8 @@ interface SettingsPanelProps {
   onFragmentSpacingChange: (value: FragmentSpacing) => void;
   onlyAudioChapters: boolean;
   onOnlyAudioChaptersChange: (value: boolean) => void;
+  chapterLabelMode: ChapterLabelMode;
+  onChapterLabelModeChange: (value: ChapterLabelMode) => void;
   codeThemeId: string;
   onCodeThemeChange: (value: string) => void;
   regionColorStyle: RegionColorStyle;
@@ -49,6 +51,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   onFragmentSpacingChange,
   onlyAudioChapters,
   onOnlyAudioChaptersChange,
+  chapterLabelMode,
+  onChapterLabelModeChange,
   codeThemeId,
   onCodeThemeChange,
   regionColorStyle,
@@ -90,6 +94,30 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
             </p>
           </div>
           <Switch checked={showStatusBar} onChange={() => onShowStatusBarChange(!showStatusBar)} title="Toggle status bar" />
+        </div>
+
+        <div>
+          <h3 className="text-sm font-medium text-gray-100">Chapter labels</h3>
+          <p className="text-xs text-gray-500 mt-0.5 mb-2">
+            Derive names from each chapter's first heading, or show the file path from the EPUB.
+          </p>
+          <div className="inline-flex rounded-md overflow-hidden border border-gray-700">
+            {CHAPTER_LABEL_OPTIONS.map((option, index) => (
+              <button
+                key={option.value}
+                onClick={() => onChapterLabelModeChange(option.value)}
+                className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                  index > 0 ? 'border-l border-gray-700' : ''
+                } ${
+                  chapterLabelMode === option.value
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-base text-gray-300 hover:bg-raised'
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div>
