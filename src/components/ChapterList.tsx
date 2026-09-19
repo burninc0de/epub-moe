@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Volume2, CheckCircle2 } from 'lucide-react';
+import { Volume2, CheckCircle2, Copy, CopyCheck } from 'lucide-react';
 import { EPUBChapter, ChapterLabelMode } from '../types/epub';
 import { readDoneChapters, toggleDoneChapter } from '../utils/chapterProgress';
+import { chapterMenuActions, type ChapterMenuActionId } from '../utils/chapterMenu';
+import { copyToClipboard } from '../utils/clipboard';
 import { PanelHeader } from './ui';
 
 interface ChapterListProps {
@@ -19,8 +21,12 @@ interface MenuState {
   href: string;
 }
 
-const MENU_WIDTH = 168;
-const MENU_HEIGHT = 40;
+const MENU_WIDTH = 184;
+/** Per row, used to keep the menu on screen. */
+const MENU_ROW_HEIGHT = 30;
+const MENU_CHROME = 12;
+/** How long the "Copied" confirmation stays up before the menu closes. */
+const COPIED_FEEDBACK_MS = 700;
 
 export const ChapterList: React.FC<ChapterListProps> = ({
   title,
@@ -47,6 +53,7 @@ export const ChapterList: React.FC<ChapterListProps> = ({
   }, [title]);
 
   const [menu, setMenu] = useState<MenuState | null>(null);
+  const [copied, setCopied] = useState<ChapterMenuActionId | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Dismiss on anything that would leave the menu stranded.
@@ -69,18 +76,47 @@ export const ChapterList: React.FC<ChapterListProps> = ({
     };
   }, [menu]);
 
+  // Clear the confirmation when the menu goes away.
+  useEffect(() => {
+    if (!menu) setCopied(null);
+  }, [menu]);
+
+  const menuChapter = menu ? visibleChapters.find(c => c.href === menu.href) : undefined;
+  const menuIsDone = menu ? done.has(menu.href) : false;
+  const menuActions = menuChapter
+    ? chapterMenuActions(
+        { title: menuChapter.title, href: menuChapter.href, hasAudio: Boolean(menuChapter.mediaOverlay) },
+        menuIsDone
+      )
+    : [];
+  const menuHeight = menuActions.length * MENU_ROW_HEIGHT + MENU_CHROME;
+
   const openMenu = (event: React.MouseEvent, href: string) => {
     event.preventDefault();
     // Keep it on screen when right-clicking near an edge.
     setMenu({
       x: Math.min(event.clientX, window.innerWidth - MENU_WIDTH - 8),
-      y: Math.min(event.clientY, window.innerHeight - MENU_HEIGHT - 8),
+      y: Math.min(event.clientY, window.innerHeight - menuHeight - 8),
       href,
     });
   };
 
-  const menuChapter = menu ? visibleChapters.find(c => c.href === menu.href) : undefined;
-  const menuIsDone = menu ? done.has(menu.href) : false;
+  const runAction = async (action: { id: ChapterMenuActionId; copyText?: string }) => {
+    if (action.id === 'toggle-done') {
+      setDone(toggleDoneChapter(title, done, menu!.href));
+      setMenu(null);
+      return;
+    }
+
+    const ok = await copyToClipboard(action.copyText ?? '');
+    if (!ok) {
+      setMenu(null);
+      return;
+    }
+    // Show which item was copied, then close.
+    setCopied(action.id);
+    window.setTimeout(() => setMenu(null), COPIED_FEEDBACK_MS);
+  };
 
   return (
     <div className="bg-panel border-r border-line flex flex-col h-full">
@@ -94,8 +130,8 @@ export const ChapterList: React.FC<ChapterListProps> = ({
             <button
               key={chapter.id}
               onClick={() => onChapterSelect(chapter.id)}
-              onContextMenu={(event) => (chapter.mediaOverlay ? openMenu(event, chapter.href) : undefined)}
-              title={chapter.mediaOverlay ? `${tooltipFor(chapter)} — right-click to mark finished` : tooltipFor(chapter)}
+              onContextMenu={(event) => openMenu(event, chapter.href)}
+              title={chapter.mediaOverlay ? `${tooltipFor(chapter)} — right-click for options` : tooltipFor(chapter)}
               className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-md text-sm transition-colors ${
                 isSelected
                   ? 'bg-blue-500/10 text-blue-300'
@@ -121,19 +157,30 @@ export const ChapterList: React.FC<ChapterListProps> = ({
           role="menu"
           onMouseDown={(event) => event.stopPropagation()}
           style={{ left: menu.x, top: menu.y, width: MENU_WIDTH }}
-          className="fixed z-50 rounded-md border border-line bg-panel py-1 shadow-2xl"
+          className="fixed z-50 rounded-md border border-line bg-panel p-1 shadow-2xl"
         >
-          <button
-            role="menuitem"
-            onClick={() => {
-              setDone(toggleDoneChapter(title, done, menu.href));
-              setMenu(null);
-            }}
-            className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-left text-gray-300 hover:bg-raised hover:text-gray-100"
-          >
-            {menuIsDone ? <Volume2 className="w-3.5 h-3.5" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
-            {menuIsDone ? 'Mark as not finished' : 'Mark as finished'}
-          </button>
+          {menuActions.map((action) => {
+            const isCopied = copied === action.id;
+            return (
+              <button
+                key={action.id}
+                role="menuitem"
+                onClick={() => void runAction(action)}
+                className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs text-left text-gray-300 hover:bg-raised hover:text-gray-100"
+              >
+                {action.id === 'toggle-done' ? (
+                  menuIsDone ? <Volume2 className="w-3.5 h-3.5" /> : <CheckCircle2 className="w-3.5 h-3.5" />
+                ) : isCopied ? (
+                  <CopyCheck className="w-3.5 h-3.5 text-blue-400" />
+                ) : (
+                  <Copy className="w-3.5 h-3.5" />
+                )}
+                <span className={isCopied ? 'text-blue-400' : undefined}>
+                  {isCopied ? 'Copied' : action.label}
+                </span>
+              </button>
+            );
+          })}
         </div>
       )}
     </div>

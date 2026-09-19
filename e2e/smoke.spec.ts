@@ -511,12 +511,12 @@ test('the context menu dismisses without choosing', async ({ page }) => {
   const chapter = page.locator('.bg-panel.border-r').first().getByRole('button', { name: /Twittern/ });
 
   await chapter.click({ button: 'right' });
-  await expect(page.getByRole('menuitem')).toBeVisible();
+  await expect(page.getByRole('menuitem').first()).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('menuitem')).toHaveCount(0);
 
   await chapter.click({ button: 'right' });
-  await expect(page.getByRole('menuitem')).toBeVisible();
+  await expect(page.getByRole('menuitem').first()).toBeVisible();
   await page.locator('.content-viewer').click({ position: { x: 10, y: 10 } });
   await expect(page.getByRole('menuitem')).toHaveCount(0);
 
@@ -538,4 +538,46 @@ test('finished chapters persist per book across a reload', async ({ page }) => {
 
   const reloaded = page.locator('.bg-panel.border-r').first().getByRole('button', { name: /Twittern/ });
   await expect(reloaded.locator('svg')).toHaveClass(/lucide-check-circle2/);
+});
+
+test('the chapter menu offers both copies, and confirms', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await loadEPUB(page);
+
+  const chapter = page.locator('.bg-panel.border-r').first().getByRole('button', { name: /Twittern/ });
+  await chapter.click({ button: 'right' });
+
+  await expect(page.getByRole('menuitem')).toHaveCount(3);
+  await expect(page.getByRole('menuitem', { name: 'Copy title' })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Copy file name' })).toBeVisible();
+
+  await page.getByRole('menuitem', { name: 'Copy title' }).click();
+  await expect(page.getByRole('menuitem', { name: 'Copied' })).toBeVisible();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('1. „Twittern kann jeder“');
+
+  // The confirmation is transient, then the menu closes.
+  await expect(page.getByRole('menuitem')).toHaveCount(0);
+});
+
+test('Copy file name puts the EPUB path on the clipboard', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await loadEPUB(page);
+
+  const chapter = page.locator('.bg-panel.border-r').first().getByRole('button', { name: /Twittern/ });
+  await chapter.click({ button: 'right' });
+  await page.getByRole('menuitem', { name: 'Copy file name' }).click();
+
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('Text/Kapitel01.html');
+});
+
+test('copying does not mark the chapter finished', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await loadEPUB(page);
+
+  const chapter = page.locator('.bg-panel.border-r').first().getByRole('button', { name: /Twittern/ });
+  await chapter.click({ button: 'right' });
+  await page.getByRole('menuitem', { name: 'Copy title' }).click();
+  await expect(page.getByRole('menuitem')).toHaveCount(0);
+
+  await expect(chapter.locator('svg')).toHaveClass(/lucide-volume2/);
 });
