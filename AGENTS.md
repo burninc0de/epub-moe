@@ -25,7 +25,8 @@ npm run lint     # ESLint - works; see notes below
 - `src/utils/epubParser.ts` — `EPUBParser` class parses `META-INF/container.xml` → OPF → spine chapters / SMIL fragments / audio blobs into `EPUBData`. Handles nested-directory EPUBs via `calculateBasePath`/`resolvePath`; use these helpers for path math rather than string joins.
 - `src/utils/smilBuilder.ts` — `buildSMIL()` regenerates SMIL XML on export.
 - `src/types/epub.ts` — `EPUBData`, `SMILFragment`, `AudioFile`, plus structured xml2js tree types (`OPFPackage`, `ContainerXML`, `SMILFile`, `SMILPar`, `OPFManifestItem`).
-- `src/App.tsx` composes the 4-panel layout: `ChapterList` (left) / `ContentViewer` (center) / `FragmentEditor` (right) / `WaveformViewer` (bottom, shown only when audio exists).
+- `src/App.tsx` composes the 4-panel layout: `ChapterList` (left) / `ContentViewer` or `FragmentTable` (center, toggled in the top bar) / `FragmentEditor` (right) / `WaveformViewer` (bottom, shown only when audio exists).
+- `src/components/FragmentTable.tsx` is the Subtitle Edit-style list view. `WaveformViewer` hands its decoded `AudioBuffer` up via `onDecodedData`; the table runs `analyzeAlignment` on it (debounced 300ms, envelope cached per buffer in `alignmentAnalysis.cachedEnvelope`) and flags boundaries that cut through speech. There is deliberately no characters-per-second metric: duration comes from the alignment itself, so text length over duration measures its own input. Overlaps are flagged only above a 50ms noise floor (SMIL times round to milliseconds); shared, contiguous boundaries are the invariant and must never be flagged.
 
 ## Gotchas
 

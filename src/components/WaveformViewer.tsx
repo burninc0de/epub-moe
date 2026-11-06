@@ -5,7 +5,7 @@ import RegionsPlugin from 'wavesurfer.js/dist/plugins/regions.js';
 import { Play, Pause, Square, ZoomIn, ZoomOut, RotateCcw, Clock, Magnet, AlertTriangle, ChevronLeft, ChevronRight, Volume2, VolumeX, Wand2 } from 'lucide-react';
 import { SMILFragment } from '../types/epub';
 import { snapFragmentBoundaries } from '../utils/fragmentSnap';
-import { analyzeAlignment, boundariesFromFragments, describeAnalysis, envelopeFromAudioBuffer, type AlignmentAnalysis, type Envelope } from '../utils/alignmentAnalysis';
+import { analyzeAlignment, boundariesFromFragments, cachedEnvelope, describeAnalysis, type AlignmentAnalysis } from '../utils/alignmentAnalysis';
 import { formatTime, formatTimeWithMs, parseTimeInput } from '../utils/time';
 import { Button, IconButton, FieldLabel, TextInput, ToolbarDivider, Modal } from './ui';
 
@@ -31,6 +31,7 @@ interface WaveformViewerProps {
   onForceNonOverlapping: (audioDuration: number) => void;
   onDragStart?: () => void;
   onDragEnd?: () => void;
+  onDecodedData?: (buffer: AudioBuffer | null) => void;
   regionColorStyle?: RegionColorStyle;
 }
 
@@ -83,6 +84,7 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
   onForceNonOverlapping,
   onDragStart,
   onDragEnd,
+  onDecodedData,
   regionColorStyle = 'modern',
 }, ref) => {
   const waveformRef = useRef<HTMLDivElement>(null);
@@ -110,9 +112,6 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
   const [showForceNonOverlapDialog, setShowForceNonOverlapDialog] = useState(false);
   const [analysis, setAnalysis] = useState<AlignmentAnalysis | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  // The envelope is the expensive part (~10-30M multiply-adds for a chapter);
-  // cache it per audio blob so re-checking after an edit is instant.
-  const envelopeCacheRef = useRef<{ blob: Blob; envelope: Envelope } | null>(null);
   const [volume, setVolume] = useState<number>(() => {
     const stored = parseFloat(localStorage.getItem(VOLUME_KEY) ?? '');
     if (!Number.isFinite(stored)) return DEFAULT_VOLUME;
@@ -134,12 +133,14 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
   const onFragmentUpdateRef = useRef(onFragmentUpdate);
   const onDragStartRef = useRef(onDragStart);
   const onDragEndRef = useRef(onDragEnd);
+  const onDecodedDataRef = useRef(onDecodedData);
   const isSnapEnabledRef = useRef(isSnapEnabled);
   useEffect(() => {
     onFragmentSelectRef.current = onFragmentSelect;
     onFragmentUpdateRef.current = onFragmentUpdate;
     onDragStartRef.current = onDragStart;
     onDragEndRef.current = onDragEnd;
+    onDecodedDataRef.current = onDecodedData;
   });
 
   useEffect(() => {
@@ -230,6 +231,7 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
 
     const audioUrl = URL.createObjectURL(audioBlob);
     audioUrlRef.current = audioUrl;
+    onDecodedDataRef.current?.(null);
     ws.load(audioUrl).catch((err: Error) => {
       // Suppress AbortError, log others
       if (err?.name !== 'AbortError') {
@@ -243,6 +245,7 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
       ws.zoom(zoomLevel); 
       ws.setVolume(volume);
       drawFragments(); 
+      onDecodedDataRef.current?.(ws.getDecodedData() ?? null);
     });
     ws.on('play', () => setIsPlaying(true)); ws.on('pause', () => setIsPlaying(false)); ws.on('timeupdate', (time) => setCurrentTime(time));
 
@@ -560,11 +563,8 @@ export const WaveformViewer = forwardRef<WaveformViewerHandles, WaveformViewerPr
     // main thread computing the envelope.
     window.setTimeout(() => {
       try {
-        if (envelopeCacheRef.current?.blob !== audioBlob) {
-          envelopeCacheRef.current = { blob: audioBlob, envelope: envelopeFromAudioBuffer(buffer) };
-        }
         const boundaries = boundariesFromFragments(fragmentsRef.current);
-        setAnalysis(analyzeAlignment(envelopeCacheRef.current.envelope, boundaries));
+        setAnalysis(analyzeAlignment(cachedEnvelope(buffer), boundaries));
       } catch (error) {
         console.error('Auto calibrate failed:', error);
       } finally {

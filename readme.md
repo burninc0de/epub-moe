@@ -22,6 +22,7 @@ You can access the latest build directly in your browser at [https://epub-moe.pa
 - **Fine-tune fragments**: Edit timing values precisely, delete unwanted fragments directly from the GUI
 - **Inline HTML editing**: Make quick adjustments to highlight placement without leaving the app
 - **Fragment splitting**: Break up sprawling sentences into digestible chunks
+- **Fragment table**: See every fragment's start, end, and duration at a glance, with misaligned ones flagged
 - **Undo/redo**: 100-step history for waveform edits, splits, deletes, offsets, force-align, and HTML edits
 - **EPUB-centric workflow**: Load EPUB, edit, export EPUB - no format conversion hell and no audio re-encoding (!)
 
@@ -112,6 +113,19 @@ npm run test:playwright
   - When you split a text fragment, the corresponding audio is automatically split as well
 - **Display toggle**: Switch between line display (fragments appear as separate lines for easier parsing) and flow text (fragments flow naturally with text)
 - **Code icon**: Toggle HTML source editing mode for direct markup adjustments
+
+### Table View
+
+The top bar switches the centre panel between the chapter text and a table of its fragments, in the spirit of [Subtitle Edit](https://www.nikse.dk/subtitleedit)'s list view:
+
+- Columns show the text, start, end, and duration of every fragment
+- Problems are found in the audio, not guessed from the text: a boundary that cuts through the middle of speech is flagged, with the nearest pause offered as a one-click fix; inverted timings, fragments that overlap earlier audio, and fragments with no text in the chapter are flagged too
+- Shared boundaries (one fragment's end is the next one's start) are the normal invariant and are never flagged; only real overlaps above 50ms of rounding noise count
+- There is deliberately no characters-per-second column. Duration comes from the boundaries you are checking, so text length over duration measures its own input; short sentences and slow delivery are not mistakes
+- If the whole chapter is uniformly late or early, one button shifts every fragment by the offset the audio analysis suggests, then re-checks
+- The filter button narrows the table to just the flagged fragments; clicking a row selects the fragment and seeks the audio to it
+
+![Table View](screenshots/table-view.png)
 
 ### Waveform Controls
 

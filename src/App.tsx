@@ -4,12 +4,23 @@ import { ChapterList } from './components/ChapterList';
 import { ContentViewer } from './components/ContentViewer';
 import { WaveformViewer, WaveformViewerHandles } from './components/WaveformViewer';
 import { FragmentEditor } from './components/FragmentEditor';
+import { FragmentTable } from './components/FragmentTable';
 import { SettingsPanel } from './components/SettingsPanel';
 import { useEPUBEditor } from './hooks/useEPUBEditor';
 import { Resizer } from './components/Resizer';
-import { FragmentSpacing, isValidFragmentSpacing, ChapterLabelMode, isValidChapterLabelMode, TimeDisplayFormat, isValidTimeDisplayFormat } from './types/epub';
-import { Upload, Loader2, PanelRightOpen, PanelRightClose, PanelLeftOpen, PanelLeftClose, Feather, Settings, Undo2, Redo2 } from 'lucide-react';
-import { Button, IconButton, Modal } from './components/ui';
+import {
+  FragmentSpacing,
+  isValidFragmentSpacing,
+  ChapterLabelMode,
+  isValidChapterLabelMode,
+  TimeDisplayFormat,
+  isValidTimeDisplayFormat,
+  CenterView,
+  isValidCenterView,
+  SMILFragment,
+} from './types/epub';
+import { Upload, Loader2, PanelRightOpen, PanelRightClose, PanelLeftOpen, PanelLeftClose, Feather, Settings, Undo2, Redo2, AlignLeft, Table2 } from 'lucide-react';
+import { Button, IconButton, Modal, ToolbarDivider } from './components/ui';
 import { DEFAULT_CODE_THEME_ID } from './utils/codeThemes';
 import { playsMultipleAudioFiles } from './utils/audioSources';
 import { RegionColorStyle } from './components/WaveformViewer';
@@ -28,6 +39,7 @@ const STATUS_BAR_KEY = 'statusBar';
 const CHAPTER_LABEL_KEY = 'chapterLabelMode';
 const PRESERVE_SMIL_METADATA_KEY = 'preserveSmilMetadata';
 const TIME_DISPLAY_FORMAT_KEY = 'timeDisplayFormat';
+const CENTER_VIEW_KEY = 'centerView';
 const NUDGE_STEP_KEY = 'nudgeStep';
 const MIN_NUDGE_STEP = 0.005;
 const MAX_NUDGE_STEP = 5;
@@ -82,6 +94,11 @@ const App: React.FC = () => {
   const [preserveSmilMetadata, setPreserveSmilMetadata] = useState(
     () => localStorage.getItem(PRESERVE_SMIL_METADATA_KEY) !== 'false'
   );
+  const [centerView, setCenterView] = useState<CenterView>(() => {
+    const stored = localStorage.getItem(CENTER_VIEW_KEY);
+    return isValidCenterView(stored) ? stored : 'text';
+  });
+  const [decodedAudio, setDecodedAudio] = useState<AudioBuffer | null>(null);
   const [nudgeStep, setNudgeStep] = useState(() => {
     const stored = parseFloat(localStorage.getItem(NUDGE_STEP_KEY) ?? '');
     if (!Number.isFinite(stored)) return DEFAULT_NUDGE_STEP;
@@ -172,6 +189,22 @@ const App: React.FC = () => {
     setHistoryPaused,
     commitHistory,
   } = useEPUBEditor();
+
+  useEffect(() => {
+    setDecodedAudio(null);
+  }, [currentAudioBlob]);
+
+  const handleDecodedData = useCallback((buffer: AudioBuffer | null) => {
+    setDecodedAudio(buffer);
+  }, []);
+
+  const handleFragmentSelect = useCallback(
+    (fragment: SMILFragment) => {
+      setSelectedFragment(fragment);
+      waveformViewerRef.current?.seekToFragment(fragment);
+    },
+    [setSelectedFragment]
+  );
 
   const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -392,6 +425,11 @@ const App: React.FC = () => {
     localStorage.setItem(CHAPTER_LABEL_KEY, value);
   }, []);
 
+  const handleCenterViewChange = useCallback((value: CenterView) => {
+    setCenterView(value);
+    localStorage.setItem(CENTER_VIEW_KEY, value);
+  }, []);
+
   const handleNudgeStepChange = useCallback((value: number) => {
     const clamped = Math.min(MAX_NUDGE_STEP, Math.max(MIN_NUDGE_STEP, value));
     setNudgeStep(clamped);
@@ -513,6 +551,21 @@ const App: React.FC = () => {
           >
             <Redo2 size={16} />
           </IconButton>
+          <ToolbarDivider />
+          <IconButton
+            onClick={() => handleCenterViewChange('text')}
+            active={centerView === 'text'}
+            title="Text view"
+          >
+            <AlignLeft size={16} />
+          </IconButton>
+          <IconButton
+            onClick={() => handleCenterViewChange('table')}
+            active={centerView === 'table'}
+            title="Table view: fragments with timing, pace, and problems"
+          >
+            <Table2 size={16} />
+          </IconButton>
         </div>
         <div className="flex items-center gap-1">
           <IconButton
@@ -594,18 +647,26 @@ const App: React.FC = () => {
           </>
         )}
 
-        {/* Middle Column (ContentViewer) */}
+        {/* Middle Column: chapter text or fragment table */}
         <div className="flex-1 flex flex-col min-w-0">
-          <ContentViewer
+          {centerView === 'table' ? (
+            <FragmentTable
               chapter={currentChapter}
               fragments={fragments}
               selectedFragment={selectedFragment}
-              onFragmentSelect={(fragment) => {
-                setSelectedFragment(fragment);
-                if (waveformViewerRef.current && fragment) {
-                  waveformViewerRef.current.seekToFragment(fragment);
-                }
-              }}
+              onFragmentSelect={handleFragmentSelect}
+              decodedAudio={decodedAudio}
+              hasAudio={!!audioBlob}
+              onApplyTimeOffset={applyTimeOffset}
+              onNudgeFragmentStart={nudgeFragmentStart}
+              autoFollow={autoFollow}
+            />
+          ) : (
+            <ContentViewer
+              chapter={currentChapter}
+              fragments={fragments}
+              selectedFragment={selectedFragment}
+              onFragmentSelect={handleFragmentSelect}
               isCutToolActive={isCutToolActive}
               setIsCutToolActive={setIsCutToolActive}
               isCutToolSticky={isCutToolSticky}
@@ -632,6 +693,7 @@ const App: React.FC = () => {
               codeThemeId={codeThemeId}
               showStatusBar={showStatusBar}
             />
+          )}
         </div>
 
         {!isRightPanelCollapsed && (
@@ -668,6 +730,7 @@ const App: React.FC = () => {
               onFragmentUpdate={updateFragment}
               onApplyTimeOffset={applyTimeOffset}
               onForceNonOverlapping={(audioDuration) => forceNonOverlappingFragments(audioDuration)}
+              onDecodedData={handleDecodedData}
               onDragStart={handleWaveformDragStart}
               onDragEnd={handleWaveformDragEnd}
               regionColorStyle={regionColorStyle}

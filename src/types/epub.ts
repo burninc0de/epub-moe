@@ -125,3 +125,9 @@ export const FRAGMENT_SPACING_OPTIONS: { value: FragmentSpacing; label: string }
 
 export const isValidFragmentSpacing = (value: string | null): value is FragmentSpacing =>
   value === 'default' || value === 'wide' || value === 'spaced';
+
+/** What the centre panel shows: the chapter text, or a table of its fragments. */
+export type CenterView = 'text' | 'table';
+
+export const isValidCenterView = (value: string | null): value is CenterView =>
+  value === 'text' || value === 'table';

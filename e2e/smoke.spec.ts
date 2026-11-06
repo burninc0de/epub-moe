@@ -91,6 +91,97 @@ test('clicking a fragment selects it and shows its timing', async ({ page }) => 
   await expect(page.getByText('End Time').locator('..').locator('input')).toHaveValue('0:04.266');
 });
 
+test('table view lists fragments with timing, pace, and problems', async ({ page }) => {
+  await loadEPUB(page);
+
+  await page.getByTitle(/Table view/).click();
+
+  const table = page.locator('table');
+  await expect(table).toBeVisible();
+  for (const heading of ['#', 'Text', 'Start', 'End', 'Dur', 'Problem']) {
+    await expect(table.locator('thead')).toContainText(heading);
+  }
+
+  const rows = table.locator('tbody tr');
+  expect(await rows.count()).toBeGreaterThan(10);
+  await expect(rows.first()).toContainText('Twittern kann jeder');
+
+  // The fixture is hand-aligned, so the audio analysis should find nothing.
+  await expect(page.getByText('All clear')).toBeVisible({ timeout: 20000 });
+
+  await page.getByTitle('Text view').click();
+  await expect(page.locator('[data-fragment-id]').first()).toBeVisible();
+});
+
+test('table view flags a boundary that cuts through speech and offers a fix', async ({ page }) => {
+  await loadEPUB(page);
+
+  // Move one boundary into the middle of the audio: a non-global misalignment
+  // that only the audio analysis can notice.
+  await page.locator('[data-fragment-id]').first().click();
+  await page.getByText('Start Time').locator('..').locator('input').fill('0:02.000');
+  await page.getByRole('button', { name: 'Apply', exact: true }).click();
+
+  await page.getByTitle(/Table view/).click();
+  await expect(page.getByText('1 needs a listen')).toBeVisible({ timeout: 20000 });
+
+  await page.getByTitle('Show only flagged fragments').click();
+  const rows = page.locator('tbody tr');
+  await expect(rows).toHaveCount(1);
+  await expect(rows.first()).toContainText('cuts speech');
+
+  await rows.first().getByRole('button', { name: 'Fix' }).click();
+  await expect(page.getByText('All clear')).toBeVisible({ timeout: 20000 });
+  await expect(page.getByText('No fragments look wrong.')).toBeVisible();
+});
+
+test('table view offers to shift a uniformly misaligned chapter', async ({ page }) => {
+  await loadEPUB(page);
+  await expect(page.locator('.waveform-scroll [part~="region"]').first()).toBeVisible({ timeout: 10000 });
+  await page.locator('[data-fragment-id]').first().click();
+
+  await applyClockOffset(page, '0:00', '0.3');
+
+  await page.getByTitle(/Table view/).click();
+  const shiftButton = page.getByRole('button', { name: /Shift all by -\d+ms/ });
+  await expect(shiftButton).toBeVisible({ timeout: 20000 });
+
+  await shiftButton.click();
+  await expect(page.getByText('All clear')).toBeVisible({ timeout: 20000 });
+
+  await expect(page.getByText('Start Time').locator('..').locator('input')).toHaveValue(/^0:00\.[0-4]/);
+});
+
+test('clicking a table row selects and seeks the fragment', async ({ page }) => {
+  await loadEPUB(page);
+
+  await page.getByTitle(/Table view/).click();
+  const row = page.locator('tbody tr').nth(1);
+  await expect(row).toContainText('Goldener Bambus');
+  await row.click();
+
+  await expect(row).toHaveClass(/bg-blue-500\/15/);
+  await expect(page.getByText('Start Time').locator('..').locator('input')).toHaveValue('0:04.266');
+  await expect(page.getByText('End Time').locator('..').locator('input')).toHaveValue('0:08.721');
+});
+
+test('table view flags fragments that overlap', async ({ page }) => {
+  await loadEPUB(page);
+
+  // Start the second fragment before the first one ends.
+  await page.locator('[data-fragment-id]').nth(1).click();
+  await page.getByText('Start Time').locator('..').locator('input').fill('0:03.000');
+  await page.getByRole('button', { name: 'Apply', exact: true }).click();
+
+  await page.getByTitle(/Table view/).click();
+  await expect(page.getByText('1 flagged')).toBeVisible({ timeout: 20000 });
+
+  await page.getByTitle('Show only flagged fragments').click();
+  const rows = page.locator('tbody tr');
+  await expect(rows).toHaveCount(1);
+  await expect(rows.first()).toContainText('overlap');
+});
+
 test('cut tool splits a fragment at a word boundary', async ({ page }) => {
   await loadEPUB(page);
 

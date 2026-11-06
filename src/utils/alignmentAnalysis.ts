@@ -183,6 +183,23 @@ export const envelopeFromAudioBuffer = (buffer: AudioBuffer, windowMs = 10): Env
   return { db, windowMs };
 };
 
+const envelopeCache = new WeakMap<AudioBuffer, Envelope>();
+
+/**
+ * Envelope of a decoded buffer, computed once per buffer.
+ *
+ * The waveform and the fragment table both analyse the same chapter audio, and
+ * the envelope is tens of millions of multiply-adds, so it must not be computed
+ * twice. Keyed weakly: dropping the buffer drops the envelope with it.
+ */
+export const cachedEnvelope = (buffer: AudioBuffer, windowMs = 10): Envelope => {
+  const cached = envelopeCache.get(buffer);
+  if (cached && cached.windowMs === windowMs) return cached;
+  const envelope = envelopeFromAudioBuffer(buffer, windowMs);
+  envelopeCache.set(buffer, envelope);
+  return envelope;
+};
+
 /** Level at a boundary time, clamped to the envelope. */
 const levelAt = (envelope: Envelope, time: number): number => {
   const { db, windowMs } = envelope;
