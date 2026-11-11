@@ -119,7 +119,7 @@ export const Modal: React.FC<ModalProps> = ({ title, onClose, className = 'max-w
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
       <div
-        className={`w-full ${className} bg-panel border border-line rounded-lg shadow-2xl p-5`}
+        className={`w-full ${className} max-h-[calc(100vh-2rem)] overflow-y-auto bg-panel border border-line rounded-lg shadow-2xl p-5`}
         onClick={(e) => e.stopPropagation()}
       >
         {title && <h3 className="text-base font-semibold text-gray-100 mb-4">{title}</h3>}
