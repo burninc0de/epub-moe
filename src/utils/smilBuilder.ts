@@ -1,4 +1,4 @@
-import { SMILFragment } from '../types/epub';
+import { SMILFragment, SMILAttributes } from '../types/epub';
 import { create } from 'xmlbuilder2';
 import { formatSMILDuration } from './time';
 
@@ -57,18 +57,26 @@ const getExportParId = (fragmentId: string, smilId: string): string => {
   return fragmentId;
 };
 
-export const buildSMIL = (fragments: SMILFragment[], textRef: string, seqId: string, smilId: string): string => {
+export const buildSMIL = (
+  fragments: SMILFragment[],
+  textRef: string,
+  seqId: string,
+  smilId: string,
+  attrs?: SMILAttributes
+): string => {
   const root = create({ version: '1.0', encoding: 'UTF-8' })
     .ele('smil', {
       xmlns: 'http://www.w3.org/ns/SMIL',
       'xmlns:epub': 'http://www.idpf.org/2007/ops',
-      version: '3.0'
+      version: '3.0',
+      ...attrs?.smil
     })
     .ele('body')
     .ele('seq', {
       id: seqId,
       'epub:textref': textRef,
-      'epub:type': 'chapter'
+      'epub:type': 'chapter',
+      ...attrs?.seq
     });
 
   fragments
@@ -80,6 +88,7 @@ export const buildSMIL = (fragments: SMILFragment[], textRef: string, seqId: str
       const parId = fragment.id ? getExportParId(fragment.id, smilId) : `par${fragments.indexOf(fragment) + 1}`;
 
       const par = root.ele('par', {
+        ...fragment.attrs,
         id: parId
       });
 

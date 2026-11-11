@@ -30,6 +30,12 @@ export const cloneEPUBData = (data: EPUBData): EPUBData => ({
   smilBaseline: new Map(
     Array.from(data.smilBaseline.entries()).map(([id, baseline]) => [id, { ...baseline }])
   ),
+  smilAttrs: new Map(
+    Array.from(data.smilAttrs.entries()).map(([id, attrs]) => [
+      id,
+      { smil: { ...attrs.smil }, seq: { ...attrs.seq } },
+    ])
+  ),
   audioFiles: new Map(
     Array.from(data.audioFiles.entries()).map(([id, file]) => [
       id,

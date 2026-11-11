@@ -39,9 +39,9 @@ describe('EPUBParser.parse', () => {
 </package>`);
     zip.file('OEBPS/Text/ch1.xhtml', '<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Chapter One</title></head><body/></html>');
     zip.file('OEBPS/smil1.smil', `<?xml version="1.0"?>
-<smil xmlns="http://www.w3.org/ns/SMIL" version="3.0">
-  <body><seq id="seq1">
-    <par id="p1"><text src="Text/ch1.xhtml#t1"/><audio src="Audio/a.mp3" clipBegin="1:02.5" clipEnd="2s"/></par>
+<smil xmlns="http://www.w3.org/ns/SMIL" xmlns:epub="http://www.idpf.org/2007/ops" version="3.0" epub:prefix="storyteller: https://example.com/#">
+  <body><seq id="seq1" epub:type="chapter">
+    <par id="p1" epub:type="storyteller:matched"><text src="Text/ch1.xhtml#t1"/><audio src="Audio/a.mp3" clipBegin="1:02.5" clipEnd="2s"/></par>
     <par id="p2"><text src="Text/ch1.xhtml#t2"/><audio src="Audio/a.mp3" clipBegin="00:00:03" clipEnd="00:00:03.500"/></par>
   </seq></body>
 </smil>`);
@@ -73,6 +73,19 @@ describe('EPUBParser.parse', () => {
     const data = await parser.parse();
 
     expect(data.smilSeqIds.get('smil1')).toBe('seq1');
+  });
+
+  it('keeps the attributes the editor does not handle', async () => {
+    const parser = new EPUBParser(buildZip());
+    const data = await parser.parse();
+
+    const attrs = data.smilAttrs.get('smil1')!;
+    expect(attrs.smil['epub:prefix']).toBe('storyteller: https://example.com/#');
+    expect(attrs.seq['epub:type']).toBe('chapter');
+    expect(data.smilFiles.get('smil1')![0].attrs).toEqual({
+      id: 'p1',
+      'epub:type': 'storyteller:matched',
+    });
   });
 
   it('records the producer duration and the clip timings it belongs to', async () => {

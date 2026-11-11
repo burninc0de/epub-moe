@@ -13,6 +13,8 @@ interface SettingsPanelProps {
   onFragmentSpacingChange: (value: FragmentSpacing) => void;
   onlyAudioChapters: boolean;
   onOnlyAudioChaptersChange: (value: boolean) => void;
+  preserveSmilMetadata: boolean;
+  onPreserveSmilMetadataChange: (value: boolean) => void;
   chapterLabelMode: ChapterLabelMode;
   onChapterLabelModeChange: (value: ChapterLabelMode) => void;
   codeThemeId: string;
@@ -51,6 +53,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   onFragmentSpacingChange,
   onlyAudioChapters,
   onOnlyAudioChaptersChange,
+  preserveSmilMetadata,
+  onPreserveSmilMetadataChange,
   chapterLabelMode,
   onChapterLabelModeChange,
   codeThemeId,
@@ -84,6 +88,21 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
             </p>
           </div>
           <Switch checked={onlyAudioChapters} onChange={() => onOnlyAudioChaptersChange(!onlyAudioChapters)} title="Toggle audio-only chapters" />
+        </div>
+
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h3 className="text-sm font-medium text-gray-100">Keep original SMIL metadata</h3>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Carry over attributes epub-moe does not edit, such as `epub:type` and `epub:prefix`.
+              Turn off to export a minimal SMIL.
+            </p>
+          </div>
+          <Switch
+            checked={preserveSmilMetadata}
+            onChange={() => onPreserveSmilMetadataChange(!preserveSmilMetadata)}
+            title="Toggle keeping original SMIL metadata"
+          />
         </div>
 
         <div className="flex items-center justify-between gap-4">

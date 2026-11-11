@@ -14,6 +14,12 @@ export interface SMILFragment {
   clipEnd: number;
   text: string;
   order: number;
+  attrs?: Record<string, string>;
+}
+
+export interface SMILAttributes {
+  smil: Record<string, string>;
+  seq: Record<string, string>;
 }
 
 export interface AudioFile {
@@ -51,7 +57,7 @@ export interface ContainerXML {
 }
 
 export interface SMILPar {
-  $?: { id?: string };
+  $?: Record<string, string>;
   text?: Array<{ $: { src: string } }>;
   audio?: Array<{ $: { src: string; clipBegin?: string; clipEnd?: string } }>;
 }
@@ -63,11 +69,9 @@ export interface SMILBaseline {
 
 export interface SMILFile {
   smil?: {
+    $?: Record<string, string>;
     body?: Array<{
-      seq?: Array<{
-        $?: { id?: string; 'epub:textref'?: string; 'epub:type'?: string };
-        par?: SMILPar[];
-      }>;
+      seq?: Array<{ $?: Record<string, string>; par?: SMILPar[] }>;
       par?: SMILPar[];
     }>;
   };
@@ -79,6 +83,7 @@ export interface EPUBData {
   smilFiles: Map<string, SMILFragment[]>;
   smilSeqIds: Map<string, string>;
   smilBaseline: Map<string, SMILBaseline>;
+  smilAttrs: Map<string, SMILAttributes>;
   audioFiles: Map<string, AudioFile>;
   manifest: OPFPackage;
 }

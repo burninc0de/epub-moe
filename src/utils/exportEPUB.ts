@@ -14,7 +14,15 @@ const resolveDuration = (epubData: EPUBData, id: string, fragments: SMILFragment
   return calculateTotalDuration(fragments);
 };
 
-export const exportEPUB = async (epubData: EPUBData, originalZip: JSZip): Promise<Blob> => {
+interface ExportOptions {
+  preserveSmilMetadata?: boolean;
+}
+
+export const exportEPUB = async (
+  epubData: EPUBData,
+  originalZip: JSZip,
+  { preserveSmilMetadata = true }: ExportOptions = {}
+): Promise<Blob> => {
   const newZip = originalZip;
   const parser = new EPUBParser(newZip);
   const basePath = await parser.getBasePath();
@@ -48,7 +56,12 @@ export const exportEPUB = async (epubData: EPUBData, originalZip: JSZip): Promis
       const chapterDuration = resolveDuration(epubData, id, validFragments);
       mediaDurations.set(id, chapterDuration);
 
-      const newSmilContent = buildSMIL(validFragments, textRef, seqId, id);
+      const smilAttrs = preserveSmilMetadata ? epubData.smilAttrs.get(id) : undefined;
+      const fragmentsForExport = preserveSmilMetadata
+        ? validFragments
+        : validFragments.map((fragment) => ({ ...fragment, attrs: undefined }));
+
+      const newSmilContent = buildSMIL(fragmentsForExport, textRef, seqId, id, smilAttrs);
       newZip.file(smilPath, newSmilContent);
     }
   }

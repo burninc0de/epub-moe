@@ -27,9 +27,12 @@ const buildZip = () => {
 </package>`);
   zip.file('OEBPS/Text/ch1.xhtml', `<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Chapter One</title></head><body><span id="t1">One</span><span id="t2">Two</span></body></html>`);
   zip.file('OEBPS/smil1.smil', buildSMIL([
-    { id: 'smil1::p1', textSrc: 'Text/ch1.xhtml#t1', audioSrc: 'Audio/a.mp3', clipBegin: 0, clipEnd: 1, text: '', order: 0 },
+    { id: 'smil1::p1', textSrc: 'Text/ch1.xhtml#t1', audioSrc: 'Audio/a.mp3', clipBegin: 0, clipEnd: 1, text: '', order: 0, attrs: { 'epub:type': 'storyteller:matched' } },
     { id: 'smil1::p2', textSrc: 'Text/ch1.xhtml#t2', audioSrc: 'Audio/a.mp3', clipBegin: 1, clipEnd: 2, text: '', order: 1 },
-  ] as SMILFragment[], '../Text/ch1.xhtml', 'ch1_overlay', 'smil1'));
+  ] as SMILFragment[], '../Text/ch1.xhtml', 'ch1_overlay', 'smil1', {
+    smil: { 'epub:prefix': 'storyteller: https://example.com/#' },
+    seq: {},
+  }));
   zip.file('OEBPS/Audio/a.mp3', new Uint8Array([1, 2, 3]));
   return zip;
 };
@@ -97,6 +100,29 @@ describe('exportEPUB', () => {
     const exportedSmil = await exported.file('OEBPS/smil1.smil')!.async('text');
 
     expect(exportedSmil).toContain('id="x00-salut_xhtml_overlay"');
+  });
+
+  it('carries unhandled SMIL attributes through by default', async () => {
+    const zip = buildZip();
+    const data = await new EPUBParser(zip).parse();
+
+    const exported = await JSZip.loadAsync(await (await exportEPUB(data, zip)).arrayBuffer());
+    const smil = await exported.file('OEBPS/smil1.smil')!.async('text');
+
+    expect(smil).toContain('epub:prefix="storyteller: https://example.com/#"');
+    expect(smil).toContain('epub:type="storyteller:matched"');
+  });
+
+  it('strips them when asked to export a minimal SMIL', async () => {
+    const zip = buildZip();
+    const data = await new EPUBParser(zip).parse();
+
+    const blob = await exportEPUB(data, zip, { preserveSmilMetadata: false });
+    const exported = await JSZip.loadAsync(await blob.arrayBuffer());
+    const smil = await exported.file('OEBPS/smil1.smil')!.async('text');
+
+    expect(smil).not.toContain('epub:prefix');
+    expect(smil).not.toContain('storyteller:matched');
   });
 
   it('keeps the duration the producer wrote when the chapter is untouched', async () => {

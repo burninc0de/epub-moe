@@ -477,6 +477,23 @@ test('chapter labels can be switched between headings and file names', async ({ 
   await expect(page.locator('.bg-panel.border-r').first()).toContainText('1. „Twittern kann jeder“');
 });
 
+test('keeping original SMIL metadata is on by default and can be turned off', async ({ page }) => {
+  await loadEPUB(page);
+
+  await page.getByTitle('Settings').click();
+  const toggle = page.getByTitle('Toggle keeping original SMIL metadata');
+  await expect(toggle).toHaveAttribute('aria-checked', 'true');
+
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-checked', 'false');
+
+  // The choice is remembered.
+  await page.reload();
+  await page.setInputFiles('input[type="file"][accept=".epub"]', FIXTURE);
+  await page.getByTitle('Settings').click();
+  await expect(page.getByTitle('Toggle keeping original SMIL metadata')).toHaveAttribute('aria-checked', 'false');
+});
+
 test('right-clicking an audio chapter offers to mark it finished', async ({ page }) => {
   await loadEPUB(page);
 

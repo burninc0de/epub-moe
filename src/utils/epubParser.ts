@@ -1,6 +1,6 @@
 import JSZip from 'jszip';
 import { parseString } from 'xml2js';
-import { EPUBData, EPUBChapter, SMILFragment, AudioFile, ContainerXML, OPFPackage, SMILPar, SMILFile, SMILBaseline } from '../types/epub';
+import { EPUBData, EPUBChapter, SMILFragment, AudioFile, ContainerXML, OPFPackage, SMILPar, SMILFile, SMILBaseline, SMILAttributes } from '../types/epub';
 import { clipSignature } from './smilBuilder';
 import { parseTimeInput } from './time';
 
@@ -58,7 +58,7 @@ export class EPUBParser {
     await this.parseOPF();
     const overlayDurations = this.parseOverlayDurations();
     const chapters = await this.parseChapters();
-    const { smilFiles, smilSeqIds, smilBaseline } = await this.parseSMILFiles(overlayDurations);
+    const { smilFiles, smilSeqIds, smilBaseline, smilAttrs } = await this.parseSMILFiles(overlayDurations);
     const audioFiles = await this.parseAudioFiles();
     
     return {
@@ -67,6 +67,7 @@ export class EPUBParser {
       smilFiles,
       smilSeqIds,
       smilBaseline,
+      smilAttrs,
       audioFiles,
       manifest: this.opfData
     };
@@ -136,10 +137,12 @@ export class EPUBParser {
     smilFiles: Map<string, SMILFragment[]>;
     smilSeqIds: Map<string, string>;
     smilBaseline: Map<string, SMILBaseline>;
+    smilAttrs: Map<string, SMILAttributes>;
   }> {
     const smilFiles = new Map<string, SMILFragment[]>();
     const smilSeqIds = new Map<string, string>();
     const smilBaseline = new Map<string, SMILBaseline>();
+    const smilAttrs = new Map<string, SMILAttributes>();
     const manifest = this.opfData.package.manifest[0].item;
     
     for (const item of manifest) {
@@ -149,9 +152,10 @@ export class EPUBParser {
         
         if (smilFile) {
           const content = await smilFile.async('text');
-          const { fragments, seqId } = await this.parseSMILContent(content, item.$.id);
+          const { fragments, seqId, attrs } = await this.parseSMILContent(content, item.$.id);
           smilFiles.set(item.$.id, fragments);
           if (seqId) smilSeqIds.set(item.$.id, seqId);
+          smilAttrs.set(item.$.id, attrs);
           
           const refinesTarget = seqId && !overlayDurations.has(item.$.id) ? seqId : item.$.id;
           smilBaseline.set(item.$.id, {
@@ -162,13 +166,13 @@ export class EPUBParser {
       }
     }
     
-    return { smilFiles, smilSeqIds, smilBaseline };
+    return { smilFiles, smilSeqIds, smilBaseline, smilAttrs };
   }
 
   private async parseSMILContent(
     content: string,
     smilId: string
-  ): Promise<{ fragments: SMILFragment[]; seqId?: string }> {
+  ): Promise<{ fragments: SMILFragment[]; seqId?: string; attrs: SMILAttributes }> {
     const smilData = await this.parseXML<SMILFile>(content);
     const fragments: SMILFragment[] = [];
     
@@ -196,13 +200,19 @@ export class EPUBParser {
           clipBegin: parseTimeInput(audio.$['clipBegin'] || '0s'),
           clipEnd: parseTimeInput(audio.$['clipEnd'] || '0s'),
           text: '',
-          order: index
+          order: index,
+          attrs: par.$ ? { ...par.$ } : undefined
         });
       }
     });
     
     const seqId = smilData.smil?.body?.[0]?.seq?.[0]?.$?.id;
-    return { fragments, seqId };
+    const attrs: SMILAttributes = {
+      smil: { ...(smilData.smil?.$ ?? {}) },
+      seq: { ...(smilData.smil?.body?.[0]?.seq?.[0]?.$ ?? {}) }
+    };
+    
+    return { fragments, seqId, attrs };
   }
 
   private async parseAudioFiles(): Promise<Map<string, AudioFile>> {

@@ -799,10 +799,10 @@ export const useEPUBEditor = () => {
     }
   }, [epubData, selectedChapter]);
 
-  const exportEPUB = useCallback(async () => {
+  const exportEPUB = useCallback(async (options?: { preserveSmilMetadata?: boolean }) => {
     if (!epubDataRef.current || !originalZip) return;
 
-    const blob = await buildExportEPUB(epubDataRef.current, originalZip);
+    const blob = await buildExportEPUB(epubDataRef.current, originalZip, options);
     saveAs(blob, 'exported.epub');
   }, [originalZip]);
 

@@ -25,6 +25,7 @@ const CODE_THEME_KEY = 'codeTheme';
 const REGION_COLOR_STYLE_KEY = 'regionColorStyle';
 const STATUS_BAR_KEY = 'statusBar';
 const CHAPTER_LABEL_KEY = 'chapterLabelMode';
+const PRESERVE_SMIL_METADATA_KEY = 'preserveSmilMetadata';
 const NUDGE_STEP_KEY = 'nudgeStep';
 const MIN_NUDGE_STEP = 0.005;
 const MAX_NUDGE_STEP = 5;
@@ -72,6 +73,9 @@ const App: React.FC = () => {
     const stored = localStorage.getItem(CHAPTER_LABEL_KEY);
     return isValidChapterLabelMode(stored) ? stored : 'title';
   });
+  const [preserveSmilMetadata, setPreserveSmilMetadata] = useState(
+    () => localStorage.getItem(PRESERVE_SMIL_METADATA_KEY) !== 'false'
+  );
   const [nudgeStep, setNudgeStep] = useState(() => {
     const stored = parseFloat(localStorage.getItem(NUDGE_STEP_KEY) ?? '');
     if (!Number.isFinite(stored)) return DEFAULT_NUDGE_STEP;
@@ -177,11 +181,11 @@ const App: React.FC = () => {
   const handleExportEPUB = useCallback(async () => {
     setIsLoadingExport(true);
     try {
-      await exportEPUB();
+      await exportEPUB({ preserveSmilMetadata });
     } finally {
       setIsLoadingExport(false);
     }
-  }, [exportEPUB]);
+  }, [exportEPUB, preserveSmilMetadata]);
 
   const handleWaveformDragStart = useCallback(() => {
     setHistoryPaused(true);
@@ -345,6 +349,11 @@ const App: React.FC = () => {
   const handleFragmentSpacingChange = useCallback((value: FragmentSpacing) => {
     setFragmentSpacing(value);
     localStorage.setItem(FRAGMENT_SPACING_KEY, value);
+  }, []);
+
+  const handlePreserveSmilMetadataChange = useCallback((value: boolean) => {
+    setPreserveSmilMetadata(value);
+    localStorage.setItem(PRESERVE_SMIL_METADATA_KEY, String(value));
   }, []);
 
   const handleOnlyAudioChaptersChange = useCallback((value: boolean) => {
@@ -649,6 +658,8 @@ const App: React.FC = () => {
             onFragmentSpacingChange={handleFragmentSpacingChange}
             onlyAudioChapters={onlyAudioChapters}
             onOnlyAudioChaptersChange={handleOnlyAudioChaptersChange}
+            preserveSmilMetadata={preserveSmilMetadata}
+            onPreserveSmilMetadataChange={handlePreserveSmilMetadataChange}
             codeThemeId={codeThemeId}
             onCodeThemeChange={handleCodeThemeChange}
             regionColorStyle={regionColorStyle}
