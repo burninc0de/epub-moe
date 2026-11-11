@@ -17,11 +17,34 @@ export const clipSignature = (fragments: SMILFragment[]): string =>
     .map(f => `${f.clipBegin}:${f.clipEnd}`)
     .join('|');
 
-export const updateOPFWithDuration = async (opfContent: string, mediaDurations: Map<string, number>): Promise<string> => {
-  let updatedContent = opfContent;
+const isDurationMetaStart = (line: string) =>
+  /^\s*<meta\b/.test(line) && line.includes('property="media:duration"');
 
-  updatedContent = updatedContent.replace(/<meta[^>]*property="media:duration"[^>]*>.*?<\/meta>/g, '');
-  updatedContent = updatedContent.replace(/<meta[^>]*property="media:duration"[^>]*\/>/g, '');
+/** Removes whole meta lines, so a second export does not leave blank lines behind. */
+const stripDurationMetas = (content: string, eol: string): string => {
+  const kept: string[] = [];
+  let insideMeta = false;
+
+  for (const line of content.split(/\r?\n/)) {
+    if (insideMeta) {
+      insideMeta = !line.includes('</meta>');
+      continue;
+    }
+
+    if (isDurationMetaStart(line)) {
+      insideMeta = !line.includes('</meta>') && !line.trimEnd().endsWith('/>');
+      continue;
+    }
+
+    kept.push(line);
+  }
+
+  return kept.join(eol);
+};
+
+export const updateOPFWithDuration = async (opfContent: string, mediaDurations: Map<string, number>): Promise<string> => {
+  const eol = opfContent.includes('\r\n') ? '\r\n' : '\n';
+  const withoutDurations = stripDurationMetas(opfContent, eol);
 
   let totalDuration = 0;
   const mediaDurationEntries: string[] = [];
@@ -38,15 +61,14 @@ export const updateOPFWithDuration = async (opfContent: string, mediaDurations: 
     `    <meta property="media:duration">${formatSMILDuration(totalDuration)}</meta>`
   );
 
-  const metadataCloseIndex = updatedContent.lastIndexOf('</metadata>');
-  if (metadataCloseIndex !== -1) {
-    updatedContent =
-      updatedContent.slice(0, metadataCloseIndex) +
-      mediaDurationEntries.join('\n') + '\n  ' +
-      updatedContent.slice(metadataCloseIndex);
-  }
+  const metadataCloseIndex = withoutDurations.lastIndexOf('</metadata>');
+  if (metadataCloseIndex === -1) return withoutDurations;
 
-  return updatedContent;
+  return (
+    withoutDurations.slice(0, metadataCloseIndex) +
+    mediaDurationEntries.join(eol) + eol + '  ' +
+    withoutDurations.slice(metadataCloseIndex)
+  );
 };
 
 const getExportParId = (fragmentId: string, smilId: string): string => {

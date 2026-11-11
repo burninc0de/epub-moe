@@ -168,4 +168,34 @@ describe('updateOPFWithDuration', () => {
     expect(updated).toContain('refines="#smil1"');
     expect(updated).toContain('>00:00:05.00</meta>');
   });
+
+  it('removes self-closing metas as well', async () => {
+    const opf = `<package>
+  <metadata>
+    <meta property="media:duration" refines="#smil1" />
+  </metadata>
+</package>`;
+
+    const updated = await updateOPFWithDuration(opf, new Map([['smil1', 5]]));
+
+    expect(updated.match(/media:duration/g)).toHaveLength(2);
+    expect(updated).toContain('>00:00:05.00</meta>');
+  });
+
+  it('is idempotent, so exporting the same book twice does not accumulate blank lines', async () => {
+    const opf = `<?xml version="1.0" encoding="UTF-8"?>
+<package>
+  <metadata>
+    <dc:title>Test</dc:title>
+    <meta property="media:duration" refines="#smil1">00:00:09.00</meta>
+    <meta property="media:duration">00:00:09.00</meta>
+  </metadata>
+</package>`;
+    const durations = new Map([['smil1', 5]]);
+
+    const once = await updateOPFWithDuration(opf, durations);
+    const twice = await updateOPFWithDuration(once, durations);
+
+    expect(twice).toBe(once);
+  });
 });
