@@ -524,13 +524,18 @@ test('the timing format toggles between clock and SMIL seconds', async ({ page }
   await expect(page.getByText('Start Time').locator('..').locator('input')).toHaveValue('0.270s');
 });
 
-test('the settings footer links the build commit', async ({ page }) => {
-  await loadEPUB(page);
+test('the build commit is shown on the upload page and in settings', async ({ page }) => {
+  await page.goto('/');
 
-  await page.getByTitle('Settings').click();
   const commit = page.getByTitle('Commit this build was made from');
   await expect(commit).toHaveText(/^[0-9a-f]{7}$/);
   await expect(commit).toHaveAttribute('href', /^https:\/\/github\.com\/burninc0de\/epub-moe\/commit\/[0-9a-f]{7}$/);
+
+  await page.setInputFiles('input[type="file"][accept=".epub"]', FIXTURE);
+  await expect(page.getByRole('button', { name: 'Export EPUB' })).toBeVisible();
+
+  await page.getByTitle('Settings').click();
+  await expect(page.getByTitle('Commit this build was made from')).toHaveText(/^[0-9a-f]{7}$/);
 });
 
 test('right-clicking an audio chapter offers to mark it finished', async ({ page }) => {

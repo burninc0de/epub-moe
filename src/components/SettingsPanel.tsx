@@ -1,6 +1,5 @@
 import React from 'react';
-import { Github } from 'lucide-react';
-import { version } from '../../package.json';
+import { BuildStamp } from './BuildStamp';
 import { FragmentSpacing, FRAGMENT_SPACING_OPTIONS, ChapterLabelMode, CHAPTER_LABEL_OPTIONS } from '../types/epub';
 import { CODE_THEMES } from '../utils/codeThemes';
 import { RegionColorStyle } from './WaveformViewer';
@@ -225,33 +224,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
         </div>
       </div>
 
-      <div className="flex items-center justify-center gap-2 text-xs text-gray-500 mt-6 pt-4 border-t border-line">
-        <a
-          href="https://github.com/burninc0de/epub-moe"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-1.5 hover:text-gray-300 transition-colors"
-        >
-          <Github className="w-3.5 h-3.5" />
-          <span>GitHub</span>
-        </a>
-        <span className="text-gray-700">|</span>
-        <span>v{version}</span>
-        {__BUILD_COMMIT__ && (
-          <>
-            <span className="text-gray-700">|</span>
-            <a
-              href={`https://github.com/burninc0de/epub-moe/commit/${__BUILD_COMMIT__}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              title="Commit this build was made from"
-              className="tabular-nums hover:text-gray-300 transition-colors"
-            >
-              {__BUILD_COMMIT__}
-            </a>
-          </>
-        )}
-      </div>
+      <BuildStamp className="mt-6 pt-4 border-t border-line" />
     </div>
   );
 };

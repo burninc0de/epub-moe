@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react';
-import { Upload, Feather, ShieldCheck, Github } from 'lucide-react';
-import { version } from '../../package.json';
+import { Upload, Feather, ShieldCheck } from 'lucide-react';
+import { BuildStamp } from './BuildStamp';
 
 interface FileUploadProps {
   onFileSelect: (file: File) => void;
@@ -83,19 +83,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect, isLoading 
           )}
         </div>
 
-        <div className="flex items-center justify-center gap-2 text-xs text-gray-500">
-          <a
-            href="https://github.com/burninc0de/epub-moe"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 hover:text-gray-300 transition-colors"
-          >
-            <Github className="w-3.5 h-3.5" />
-            <span>GitHub</span>
-          </a>
-          <span className="text-gray-700">|</span>
-          <span>v{version}</span>
-        </div>
+        <BuildStamp />
       </div>
     </div>
   );
