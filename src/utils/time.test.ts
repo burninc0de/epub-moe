@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatTime, formatTimeWithMs, formatSMILDuration, parseTimeInput } from './time';
+import { formatTime, formatTimeWithMs, formatTimeInSeconds, formatSMILDuration, parseTimeInput } from './time';
 
 describe('formatTime', () => {
   it('formats minutes and seconds', () => {
@@ -14,6 +14,20 @@ describe('formatTimeWithMs', () => {
     expect(formatTimeWithMs(0)).toBe('0:00.000');
     expect(formatTimeWithMs(61.5)).toBe('1:01.500');
     expect(formatTimeWithMs(65.987)).toBe('1:05.987');
+  });
+});
+
+describe('formatTimeInSeconds', () => {
+  it('writes the value the SMIL file carries', () => {
+    expect(formatTimeInSeconds(254.46)).toBe('254.460s');
+    expect(formatTimeInSeconds(0)).toBe('0.000s');
+    expect(formatTimeInSeconds(73.74)).toBe('73.740s');
+  });
+
+  it('round-trips through parseTimeInput without losing precision', () => {
+    for (const value of [0, 0.27, 254.46, 601.005]) {
+      expect(parseTimeInput(formatTimeInSeconds(value))).toBeCloseTo(value, 3);
+    }
   });
 });
 

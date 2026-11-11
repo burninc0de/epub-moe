@@ -7,7 +7,7 @@ import { FragmentEditor } from './components/FragmentEditor';
 import { SettingsPanel } from './components/SettingsPanel';
 import { useEPUBEditor } from './hooks/useEPUBEditor';
 import { Resizer } from './components/Resizer';
-import { FragmentSpacing, isValidFragmentSpacing, ChapterLabelMode, isValidChapterLabelMode } from './types/epub';
+import { FragmentSpacing, isValidFragmentSpacing, ChapterLabelMode, isValidChapterLabelMode, TimeDisplayFormat, isValidTimeDisplayFormat } from './types/epub';
 import { Upload, Loader2, PanelRightOpen, PanelRightClose, PanelLeftOpen, PanelLeftClose, Feather, Settings, Undo2, Redo2 } from 'lucide-react';
 import { Button, IconButton, Modal } from './components/ui';
 import { DEFAULT_CODE_THEME_ID } from './utils/codeThemes';
@@ -26,6 +26,7 @@ const REGION_COLOR_STYLE_KEY = 'regionColorStyle';
 const STATUS_BAR_KEY = 'statusBar';
 const CHAPTER_LABEL_KEY = 'chapterLabelMode';
 const PRESERVE_SMIL_METADATA_KEY = 'preserveSmilMetadata';
+const TIME_DISPLAY_FORMAT_KEY = 'timeDisplayFormat';
 const NUDGE_STEP_KEY = 'nudgeStep';
 const MIN_NUDGE_STEP = 0.005;
 const MAX_NUDGE_STEP = 5;
@@ -69,6 +70,10 @@ const App: React.FC = () => {
     return stored === 'classic' ? 'classic' : 'modern';
   });
   const [showStatusBar, setShowStatusBar] = useState(() => localStorage.getItem(STATUS_BAR_KEY) !== 'false');
+  const [timeDisplayFormat, setTimeDisplayFormat] = useState<TimeDisplayFormat>(() => {
+    const stored = localStorage.getItem(TIME_DISPLAY_FORMAT_KEY);
+    return isValidTimeDisplayFormat(stored) ? stored : 'clock';
+  });
   const [chapterLabelMode, setChapterLabelMode] = useState<ChapterLabelMode>(() => {
     const stored = localStorage.getItem(CHAPTER_LABEL_KEY);
     return isValidChapterLabelMode(stored) ? stored : 'title';
@@ -351,6 +356,11 @@ const App: React.FC = () => {
     localStorage.setItem(FRAGMENT_SPACING_KEY, value);
   }, []);
 
+  const handleTimeDisplayFormatChange = useCallback((value: TimeDisplayFormat) => {
+    setTimeDisplayFormat(value);
+    localStorage.setItem(TIME_DISPLAY_FORMAT_KEY, value);
+  }, []);
+
   const handlePreserveSmilMetadataChange = useCallback((value: boolean) => {
     setPreserveSmilMetadata(value);
     localStorage.setItem(PRESERVE_SMIL_METADATA_KEY, String(value));
@@ -616,6 +626,7 @@ const App: React.FC = () => {
             <div style={{ width: rightPanelWidth }} className="flex-shrink-0 h-full overflow-auto bg-panel">
               <FragmentEditor
                 selectedFragment={selectedFragment}
+                timeDisplayFormat={timeDisplayFormat}
                 nudgeStep={nudgeStep}
                 onFragmentUpdate={updateFragment}
                 onFragmentDelete={deleteFragment}
@@ -668,6 +679,8 @@ const App: React.FC = () => {
             onShowStatusBarChange={handleShowStatusBarChange}
             chapterLabelMode={chapterLabelMode}
             onChapterLabelModeChange={handleChapterLabelModeChange}
+            timeDisplayFormat={timeDisplayFormat}
+            onTimeDisplayFormatChange={handleTimeDisplayFormatChange}
             nudgeStep={nudgeStep}
             onNudgeStepChange={handleNudgeStepChange}
             defaultNudgeStep={DEFAULT_NUDGE_STEP}

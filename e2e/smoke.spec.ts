@@ -494,6 +494,33 @@ test('keeping original SMIL metadata is on by default and can be turned off', as
   await expect(page.getByTitle('Toggle keeping original SMIL metadata')).toHaveAttribute('aria-checked', 'false');
 });
 
+test('timing format can be switched to SMIL seconds', async ({ page }) => {
+  await loadEPUB(page);
+
+  await page.locator('[data-fragment-id]').first().click();
+  const startInput = page.getByText('Start Time').locator('..').locator('input');
+  const endInput = page.getByText('End Time').locator('..').locator('input');
+  await expect(startInput).toHaveValue('0:00.270');
+
+  await page.getByTitle('Settings').click();
+  await page.getByRole('button', { name: '83.456s' }).click();
+  await page.keyboard.press('Escape');
+
+  await expect(startInput).toHaveValue('0.270s');
+  await expect(endInput).toHaveValue('4.266s');
+
+  // Switching format alone must not look like an edit.
+  await expect(page.getByRole('button', { name: 'Apply', exact: true })).toBeDisabled();
+
+  // The value still applies.
+  await endInput.fill('5.000s');
+  await page.getByRole('button', { name: 'Apply', exact: true }).click();
+  await expect(endInput).toHaveValue('5.000s');
+
+  // The waveform keeps its own clock formatting.
+  await expect(page.getByText(/^\d+:\d{2} \/ \d+:\d{2}$/)).toBeVisible();
+});
+
 test('right-clicking an audio chapter offers to mark it finished', async ({ page }) => {
   await loadEPUB(page);
 

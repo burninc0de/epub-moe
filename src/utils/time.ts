@@ -12,6 +12,8 @@ export const formatTimeWithMs = (seconds: number): string => {
   return `${mins}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(3, '0')}`;
 };
 
+export const formatTimeInSeconds = (seconds: number): string => `${seconds.toFixed(3)}s`;
+
 export const formatSMILDuration = (seconds: number): string => {
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);

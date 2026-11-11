@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Clock, Minus, Plus, Trash2 } from 'lucide-react';
-import { SMILFragment } from '../types/epub';
-import { formatTimeWithMs, parseTimeInput } from '../utils/time';
+import { SMILFragment, TimeDisplayFormat } from '../types/epub';
+import { formatTimeInSeconds, formatTimeWithMs, parseTimeInput } from '../utils/time';
 import { Button, IconButton, PanelHeader, SectionLabel, FieldLabel, TextInput } from './ui';
 
 interface FragmentEditorProps {
   selectedFragment: SMILFragment | null;
+  timeDisplayFormat: TimeDisplayFormat;
   nudgeStep: number;
   onFragmentUpdate: (fragmentId: string, updates: Partial<SMILFragment>) => void;
   onFragmentDelete: (fragmentId: string) => void;
@@ -15,6 +16,7 @@ interface FragmentEditorProps {
 
 export const FragmentEditor: React.FC<FragmentEditorProps> = ({
   selectedFragment,
+  timeDisplayFormat,
   nudgeStep,
   onFragmentUpdate,
   onFragmentDelete,
@@ -23,6 +25,7 @@ export const FragmentEditor: React.FC<FragmentEditorProps> = ({
 }) => {
   const [startTimeInput, setStartTimeInput] = useState('');
   const [endTimeInput, setEndTimeInput] = useState('');
+  const formatTime = timeDisplayFormat === 'seconds' ? formatTimeInSeconds : formatTimeWithMs;
 
   useEffect(() => {
     if (!selectedFragment) {
@@ -31,13 +34,13 @@ export const FragmentEditor: React.FC<FragmentEditorProps> = ({
       return;
     }
 
-    setStartTimeInput(formatTimeWithMs(selectedFragment.clipBegin));
-    setEndTimeInput(formatTimeWithMs(selectedFragment.clipEnd));
-  }, [selectedFragment]);
+    setStartTimeInput(formatTime(selectedFragment.clipBegin));
+    setEndTimeInput(formatTime(selectedFragment.clipEnd));
+  }, [selectedFragment, formatTime]);
 
   const hasTimingChanges = selectedFragment
-    ? startTimeInput !== formatTimeWithMs(selectedFragment.clipBegin) ||
-      endTimeInput !== formatTimeWithMs(selectedFragment.clipEnd)
+    ? startTimeInput !== formatTime(selectedFragment.clipBegin) ||
+      endTimeInput !== formatTime(selectedFragment.clipEnd)
     : false;
 
   const handleApplyTiming = () => {
