@@ -1,6 +1,7 @@
 import JSZip from 'jszip';
 import { parseString } from 'xml2js';
-import { EPUBData, EPUBChapter, SMILFragment, AudioFile, ContainerXML, OPFPackage, SMILPar, SMILFile } from '../types/epub';
+import { EPUBData, EPUBChapter, SMILFragment, AudioFile, ContainerXML, OPFPackage, SMILPar, SMILFile, SMILBaseline } from '../types/epub';
+import { clipSignature } from './smilBuilder';
 import { parseTimeInput } from './time';
 
 const XHTML_MEDIA_TYPE = 'application/xhtml+xml';
@@ -55,8 +56,9 @@ export class EPUBParser {
   async parse(): Promise<EPUBData> {
     await this.parseContainer();
     await this.parseOPF();
+    const overlayDurations = this.parseOverlayDurations();
     const chapters = await this.parseChapters();
-    const { smilFiles, smilSeqIds } = await this.parseSMILFiles();
+    const { smilFiles, smilSeqIds, smilBaseline } = await this.parseSMILFiles(overlayDurations);
     const audioFiles = await this.parseAudioFiles();
     
     return {
@@ -64,6 +66,7 @@ export class EPUBParser {
       chapters,
       smilFiles,
       smilSeqIds,
+      smilBaseline,
       audioFiles,
       manifest: this.opfData
     };
@@ -115,12 +118,28 @@ export class EPUBParser {
     return chapters;
   }
 
-  private async parseSMILFiles(): Promise<{
+  /** `media:duration` written by whoever produced the book, keyed by the id its `refines` points at. */
+  private parseOverlayDurations(): Map<string, number> {
+    const durations = new Map<string, number>();
+    const metas = this.opfData.package.metadata?.[0]?.meta ?? [];
+    
+    for (const meta of metas) {
+      const refines = meta.$?.refines;
+      if (meta.$?.property !== 'media:duration' || !refines?.startsWith('#')) continue;
+      durations.set(refines.slice(1), parseTimeInput(meta._ ?? ''));
+    }
+    
+    return durations;
+  }
+
+  private async parseSMILFiles(overlayDurations: Map<string, number>): Promise<{
     smilFiles: Map<string, SMILFragment[]>;
     smilSeqIds: Map<string, string>;
+    smilBaseline: Map<string, SMILBaseline>;
   }> {
     const smilFiles = new Map<string, SMILFragment[]>();
     const smilSeqIds = new Map<string, string>();
+    const smilBaseline = new Map<string, SMILBaseline>();
     const manifest = this.opfData.package.manifest[0].item;
     
     for (const item of manifest) {
@@ -133,11 +152,17 @@ export class EPUBParser {
           const { fragments, seqId } = await this.parseSMILContent(content, item.$.id);
           smilFiles.set(item.$.id, fragments);
           if (seqId) smilSeqIds.set(item.$.id, seqId);
+          
+          const refinesTarget = seqId && !overlayDurations.has(item.$.id) ? seqId : item.$.id;
+          smilBaseline.set(item.$.id, {
+            duration: overlayDurations.get(refinesTarget),
+            clipSignature: clipSignature(fragments)
+          });
         }
       }
     }
     
-    return { smilFiles, smilSeqIds };
+    return { smilFiles, smilSeqIds, smilBaseline };
   }
 
   private async parseSMILContent(

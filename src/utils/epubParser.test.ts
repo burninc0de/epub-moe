@@ -27,6 +27,8 @@ describe('EPUBParser.parse', () => {
 <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
   <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
     <dc:title>Test Book</dc:title>
+    <meta property="media:duration" refines="#smil1">00:00:09.00</meta>
+    <meta property="media:duration">00:00:09.00</meta>
   </metadata>
   <manifest>
     <item id="ch1" href="Text/ch1.xhtml" media-type="application/xhtml+xml" media-overlay="smil1"/>
@@ -71,6 +73,15 @@ describe('EPUBParser.parse', () => {
     const data = await parser.parse();
 
     expect(data.smilSeqIds.get('smil1')).toBe('seq1');
+  });
+
+  it('records the producer duration and the clip timings it belongs to', async () => {
+    const parser = new EPUBParser(buildZip());
+    const data = await parser.parse();
+
+    const baseline = data.smilBaseline.get('smil1')!;
+    expect(baseline.duration).toBeCloseTo(9);
+    expect(baseline.clipSignature).toBe('62.5:2|3:3.5');
   });
 
   it('parses SMIL clock times in both formats', async () => {

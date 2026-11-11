@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   buildSMIL,
   calculateTotalDuration,
+  clipSignature,
   toXmlId,
   updateOPFWithDuration,
 } from './smilBuilder';
@@ -38,13 +39,57 @@ describe('calculateTotalDuration', () => {
     expect(calculateTotalDuration([])).toBe(0);
   });
 
-  it('returns the max clipEnd across fragments', () => {
+  it('sums the clip durations', () => {
     const fragments = [
-      makeFragment({ clipEnd: 3 }),
-      makeFragment({ id: 'smil1::p2', clipEnd: 7.5 }),
-      makeFragment({ id: 'smil1::p3', clipEnd: 2 }),
+      makeFragment({ clipBegin: 0, clipEnd: 2 }),
+      makeFragment({ id: 'smil1::p2', clipBegin: 2, clipEnd: 7.5 }),
+      makeFragment({ id: 'smil1::p3', clipBegin: 7.5, clipEnd: 9 }),
     ];
-    expect(calculateTotalDuration(fragments)).toBe(7.5);
+    expect(calculateTotalDuration(fragments)).toBe(9);
+  });
+
+  it('leaves out the lead-in before the first clip', () => {
+    expect(calculateTotalDuration([makeFragment({ clipBegin: 5, clipEnd: 20 })])).toBe(15);
+  });
+
+  it('leaves out gaps between clips', () => {
+    const fragments = [
+      makeFragment({ clipBegin: 0, clipEnd: 5 }),
+      makeFragment({ id: 'smil1::p2', clipBegin: 8, clipEnd: 10 }),
+    ];
+    expect(calculateTotalDuration(fragments)).toBe(7);
+  });
+
+  it('sums clips that come from different audio files', () => {
+    const fragments = [
+      makeFragment({ audioSrc: 'a.mp3', clipBegin: 0, clipEnd: 73.74 }),
+      makeFragment({ id: 'smil1::p2', audioSrc: 'b.mp3', clipBegin: 0, clipEnd: 65.12 }),
+    ];
+    expect(calculateTotalDuration(fragments)).toBeCloseTo(138.86, 2);
+  });
+});
+
+describe('clipSignature', () => {
+  it('is stable for the same timings', () => {
+    const fragments = [makeFragment({ clipBegin: 0, clipEnd: 2 })];
+    expect(clipSignature(fragments)).toBe(clipSignature(fragments.map(f => ({ ...f }))));
+  });
+
+  it('changes when a boundary moves', () => {
+    const before = clipSignature([makeFragment({ clipBegin: 0, clipEnd: 2 })]);
+    const after = clipSignature([makeFragment({ clipBegin: 0, clipEnd: 2.5 })]);
+    expect(after).not.toBe(before);
+  });
+
+  it('changes when a fragment is removed', () => {
+    const fragments = [makeFragment({ clipEnd: 2 }), makeFragment({ id: 'smil1::p2', order: 1, clipBegin: 2, clipEnd: 3 })];
+    expect(clipSignature(fragments.slice(1))).not.toBe(clipSignature(fragments));
+  });
+
+  it('ignores text and audio sources, which do not change duration', () => {
+    const before = clipSignature([makeFragment({ textSrc: 'a.xhtml#t1', audioSrc: 'a.mp3' })]);
+    const after = clipSignature([makeFragment({ textSrc: 'b.xhtml#t9', audioSrc: 'b.mp3' })]);
+    expect(after).toBe(before);
   });
 });
 

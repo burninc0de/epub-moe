@@ -1,8 +1,18 @@
 import JSZip from 'jszip';
 import { parseString } from 'xml2js';
 import { EPUBParser } from './epubParser';
-import { buildSMIL, calculateTotalDuration, toXmlId, updateOPFWithDuration } from './smilBuilder';
-import { EPUBData, ContainerXML } from '../types/epub';
+import { buildSMIL, calculateTotalDuration, clipSignature, toXmlId, updateOPFWithDuration } from './smilBuilder';
+import { EPUBData, ContainerXML, SMILFragment } from '../types/epub';
+
+const resolveDuration = (epubData: EPUBData, id: string, fragments: SMILFragment[]): number => {
+  const baseline = epubData.smilBaseline.get(id);
+
+  if (baseline?.duration !== undefined && baseline.clipSignature === clipSignature(fragments)) {
+    return baseline.duration;
+  }
+
+  return calculateTotalDuration(fragments);
+};
 
 export const exportEPUB = async (epubData: EPUBData, originalZip: JSZip): Promise<Blob> => {
   const newZip = originalZip;
@@ -35,7 +45,7 @@ export const exportEPUB = async (epubData: EPUBData, originalZip: JSZip): Promis
         return textId && allIds.has(textId);
       });
 
-      const chapterDuration = calculateTotalDuration(validFragments);
+      const chapterDuration = resolveDuration(epubData, id, validFragments);
       mediaDurations.set(id, chapterDuration);
 
       const newSmilContent = buildSMIL(validFragments, textRef, seqId, id);

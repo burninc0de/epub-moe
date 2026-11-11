@@ -34,14 +34,23 @@ const buildZip = () => {
   return zip;
 };
 
+const withProducerDuration = async (zip: JSZip, value: string) => {
+  const opf = await zip.file('OEBPS/content.opf')!.async('text');
+  zip.file('OEBPS/content.opf', opf.replace(
+    '<meta property="media:duration">00:00:00.00</meta>',
+    `<meta property="media:duration" refines="#smil1">${value}</meta>\n    <meta property="media:duration">${value}</meta>`
+  ));
+};
+
 describe('exportEPUB', () => {
   it('writes updated SMIL, chapter HTML, and OPF duration', async () => {
     const zip = buildZip();
     const data = await new EPUBParser(zip).parse();
 
-    // Simulate an edit: retime the first fragment
+    // Simulate an edit: retime the first fragment, dragging its neighbour with it
     const fragments = data.smilFiles.get('smil1')!;
     fragments[0] = { ...fragments[0], clipEnd: 1.5 };
+    fragments[1] = { ...fragments[1], clipBegin: 1.5 };
     data.smilFiles.set('smil1', fragments);
 
     const blob = await exportEPUB(data, zip);
@@ -88,6 +97,47 @@ describe('exportEPUB', () => {
     const exportedSmil = await exported.file('OEBPS/smil1.smil')!.async('text');
 
     expect(exportedSmil).toContain('id="x00-salut_xhtml_overlay"');
+  });
+
+  it('keeps the duration the producer wrote when the chapter is untouched', async () => {
+    const zip = buildZip();
+    await withProducerDuration(zip, '00:00:09.00');
+    const data = await new EPUBParser(zip).parse();
+
+    const exported = await JSZip.loadAsync(await (await exportEPUB(data, zip)).arrayBuffer());
+    const opf = await exported.file('OEBPS/content.opf')!.async('text');
+
+    expect(opf).toContain('refines="#smil1">00:00:09.00<');
+  });
+
+  it('recomputes the duration once a fragment is retimed', async () => {
+    const zip = buildZip();
+    await withProducerDuration(zip, '00:00:09.00');
+    const data = await new EPUBParser(zip).parse();
+
+    const fragments = data.smilFiles.get('smil1')!;
+    fragments[0] = { ...fragments[0], clipEnd: 1.5 };
+    data.smilFiles.set('smil1', fragments);
+
+    const exported = await JSZip.loadAsync(await (await exportEPUB(data, zip)).arrayBuffer());
+    const opf = await exported.file('OEBPS/content.opf')!.async('text');
+
+    expect(opf).toContain('refines="#smil1">00:00:02.50<');
+  });
+
+  it('keeps the producer duration again once an edit is undone', async () => {
+    const zip = buildZip();
+    await withProducerDuration(zip, '00:00:09.00');
+    const data = await new EPUBParser(zip).parse();
+
+    const original = data.smilFiles.get('smil1')!;
+    data.smilFiles.set('smil1', [{ ...original[0], clipEnd: 1.5 }, original[1]]);
+    data.smilFiles.set('smil1', original);
+
+    const exported = await JSZip.loadAsync(await (await exportEPUB(data, zip)).arrayBuffer());
+    const opf = await exported.file('OEBPS/content.opf')!.async('text');
+
+    expect(opf).toContain('refines="#smil1">00:00:09.00<');
   });
 
   it('generates a valid NCName when the original SMIL has no seq id', async () => {

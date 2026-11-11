@@ -33,7 +33,10 @@ export interface OPFManifestItem {
 
 export interface OPFPackage {
   package: {
-    metadata?: Array<{ 'dc:title'?: Array<string | { _?: string }> }>;
+    metadata?: Array<{
+      'dc:title'?: Array<string | { _?: string }>;
+      meta?: Array<{ $?: { property?: string; refines?: string }; _?: string }>;
+    }>;
     manifest: Array<{ item: OPFManifestItem[] }>;
     spine: Array<{ itemref: Array<{ $: { idref: string } }> }>;
   };
@@ -53,6 +56,11 @@ export interface SMILPar {
   audio?: Array<{ $: { src: string; clipBegin?: string; clipEnd?: string } }>;
 }
 
+export interface SMILBaseline {
+  duration?: number;
+  clipSignature: string;
+}
+
 export interface SMILFile {
   smil?: {
     body?: Array<{
@@ -70,6 +78,7 @@ export interface EPUBData {
   chapters: EPUBChapter[];
   smilFiles: Map<string, SMILFragment[]>;
   smilSeqIds: Map<string, string>;
+  smilBaseline: Map<string, SMILBaseline>;
   audioFiles: Map<string, AudioFile>;
   manifest: OPFPackage;
 }

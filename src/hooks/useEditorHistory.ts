@@ -27,6 +27,9 @@ export const cloneEPUBData = (data: EPUBData): EPUBData => ({
     ])
   ),
   smilSeqIds: new Map(data.smilSeqIds),
+  smilBaseline: new Map(
+    Array.from(data.smilBaseline.entries()).map(([id, baseline]) => [id, { ...baseline }])
+  ),
   audioFiles: new Map(
     Array.from(data.audioFiles.entries()).map(([id, file]) => [
       id,

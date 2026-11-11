@@ -8,11 +8,14 @@ export const toXmlId = (raw: string): string => {
   return /^[\p{L}_]/u.test(cleaned) ? cleaned : `id_${cleaned}`;
 };
 
-export const calculateTotalDuration = (fragments: SMILFragment[]): number => {
-  if (fragments.length === 0) return 0;
+export const calculateTotalDuration = (fragments: SMILFragment[]): number =>
+  fragments.reduce((sum, f) => sum + (f.clipEnd - f.clipBegin), 0);
 
-  return Math.max(...fragments.map(f => f.clipEnd));
-};
+export const clipSignature = (fragments: SMILFragment[]): string =>
+  [...fragments]
+    .sort((a, b) => a.order - b.order)
+    .map(f => `${f.clipBegin}:${f.clipEnd}`)
+    .join('|');
 
 export const updateOPFWithDuration = async (opfContent: string, mediaDurations: Map<string, number>): Promise<string> => {
   let updatedContent = opfContent;
