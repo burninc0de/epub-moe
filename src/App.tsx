@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { FileUpload } from './components/FileUpload';
 import { ChapterList } from './components/ChapterList';
 import { ContentViewer } from './components/ContentViewer';
@@ -422,6 +422,18 @@ const App: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const multiAudioChapterIds = useMemo(() => {
+    const ids = new Set<string>();
+    if (!epubData) return ids;
+
+    for (const chapter of epubData.chapters) {
+      const overlay = chapter.mediaOverlay ? epubData.smilFiles.get(chapter.mediaOverlay) : undefined;
+      if (overlay && playsMultipleAudioFiles(overlay)) ids.add(chapter.id);
+    }
+
+    return ids;
+  }, [epubData]);
+
   if (error) {
     return (
       <div className="min-h-screen bg-base flex items-center justify-center p-8">
@@ -450,14 +462,6 @@ const App: React.FC = () => {
   const currentChapter = getCurrentChapter();
   const fragments = getCurrentFragments();
   const audioBlob = currentAudioBlob;
-  const multiAudioChapterIds = new Set(
-    (epubData?.chapters ?? [])
-      .filter((chapter) => {
-        const overlay = chapter.mediaOverlay && epubData?.smilFiles.get(chapter.mediaOverlay);
-        return overlay ? playsMultipleAudioFiles(overlay) : false;
-      })
-      .map((chapter) => chapter.id)
-  );
 
   return (
     <div className="h-screen flex flex-col bg-base text-gray-100 overflow-hidden">
