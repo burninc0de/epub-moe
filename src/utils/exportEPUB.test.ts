@@ -69,4 +69,43 @@ describe('exportEPUB', () => {
     expect(smil).not.toContain('#t1');
     expect(smil).toContain('#t2');
   });
+
+  it('reuses the original seq id so an untouched chapter keeps a valid id', async () => {
+    const zip = buildZip();
+    const smil = `<?xml version="1.0"?>
+<smil xmlns="http://www.w3.org/ns/SMIL" version="3.0">
+  <body><seq id="x00-salut_xhtml_overlay">
+    <par id="p1"><text src="Text/00-salut.xhtml#t1"/><audio src="Audio/a.mp3" clipBegin="0s" clipEnd="1s"/></par>
+  </seq></body>
+</smil>`;
+    zip.file('OEBPS/smil1.smil', smil);
+    zip.file('OEBPS/Text/00-salut.xhtml', '<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Salut</title></head><body><span id="t1">One</span></body></html>');
+    zip.file('OEBPS/content.opf', (await zip.file('OEBPS/content.opf')!.async('text'))
+      .replace('Text/ch1.xhtml', 'Text/00-salut.xhtml'));
+
+    const data = await new EPUBParser(zip).parse();
+    const exported = await JSZip.loadAsync(await (await exportEPUB(data, zip)).arrayBuffer());
+    const exportedSmil = await exported.file('OEBPS/smil1.smil')!.async('text');
+
+    expect(exportedSmil).toContain('id="x00-salut_xhtml_overlay"');
+  });
+
+  it('generates a valid NCName when the original SMIL has no seq id', async () => {
+    const zip = buildZip();
+    zip.file('OEBPS/smil1.smil', `<?xml version="1.0"?>
+<smil xmlns="http://www.w3.org/ns/SMIL" version="3.0">
+  <body><seq>
+    <par id="p1"><text src="Text/00-salut.xhtml#t1"/><audio src="Audio/a.mp3" clipBegin="0s" clipEnd="1s"/></par>
+  </seq></body>
+</smil>`);
+    zip.file('OEBPS/Text/00-salut.xhtml', '<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Salut</title></head><body><span id="t1">One</span></body></html>');
+    zip.file('OEBPS/content.opf', (await zip.file('OEBPS/content.opf')!.async('text'))
+      .replace('Text/ch1.xhtml', 'Text/00-salut.xhtml'));
+
+    const data = await new EPUBParser(zip).parse();
+    const exported = await JSZip.loadAsync(await (await exportEPUB(data, zip)).arrayBuffer());
+    const exportedSmil = await exported.file('OEBPS/smil1.smil')!.async('text');
+
+    expect(exportedSmil).toContain('id="id_00-salut.xhtml_overlay"');
+  });
 });

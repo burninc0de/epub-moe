@@ -2,6 +2,12 @@ import { SMILFragment } from '../types/epub';
 import { create } from 'xmlbuilder2';
 import { formatSMILDuration } from './time';
 
+export const toXmlId = (raw: string): string => {
+  const cleaned = raw.replace(/[^\p{L}\p{N}._-]/gu, '_');
+  if (!cleaned) return 'overlay';
+  return /^[\p{L}_]/u.test(cleaned) ? cleaned : `id_${cleaned}`;
+};
+
 export const calculateTotalDuration = (fragments: SMILFragment[]): number => {
   if (fragments.length === 0) return 0;
 

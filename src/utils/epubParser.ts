@@ -56,13 +56,14 @@ export class EPUBParser {
     await this.parseContainer();
     await this.parseOPF();
     const chapters = await this.parseChapters();
-    const smilFiles = await this.parseSMILFiles();
+    const { smilFiles, smilSeqIds } = await this.parseSMILFiles();
     const audioFiles = await this.parseAudioFiles();
     
     return {
       title: this.extractStringFromXMLJS(this.opfData?.package?.metadata?.[0]?.['dc:title']?.[0]) || 'Untitled',
       chapters,
       smilFiles,
+      smilSeqIds,
       audioFiles,
       manifest: this.opfData
     };
@@ -114,8 +115,12 @@ export class EPUBParser {
     return chapters;
   }
 
-  private async parseSMILFiles(): Promise<Map<string, SMILFragment[]>> {
+  private async parseSMILFiles(): Promise<{
+    smilFiles: Map<string, SMILFragment[]>;
+    smilSeqIds: Map<string, string>;
+  }> {
     const smilFiles = new Map<string, SMILFragment[]>();
+    const smilSeqIds = new Map<string, string>();
     const manifest = this.opfData.package.manifest[0].item;
     
     for (const item of manifest) {
@@ -125,16 +130,20 @@ export class EPUBParser {
         
         if (smilFile) {
           const content = await smilFile.async('text');
-          const fragments = await this.parseSMILContent(content, item.$.id);
+          const { fragments, seqId } = await this.parseSMILContent(content, item.$.id);
           smilFiles.set(item.$.id, fragments);
+          if (seqId) smilSeqIds.set(item.$.id, seqId);
         }
       }
     }
     
-    return smilFiles;
+    return { smilFiles, smilSeqIds };
   }
 
-  private async parseSMILContent(content: string, smilId: string): Promise<SMILFragment[]> {
+  private async parseSMILContent(
+    content: string,
+    smilId: string
+  ): Promise<{ fragments: SMILFragment[]; seqId?: string }> {
     const smilData = await this.parseXML<SMILFile>(content);
     const fragments: SMILFragment[] = [];
     
@@ -167,7 +176,8 @@ export class EPUBParser {
       }
     });
     
-    return fragments;
+    const seqId = smilData.smil?.body?.[0]?.seq?.[0]?.$?.id;
+    return { fragments, seqId };
   }
 
   private async parseAudioFiles(): Promise<Map<string, AudioFile>> {

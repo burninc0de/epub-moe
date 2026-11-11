@@ -56,7 +56,10 @@ export interface SMILPar {
 export interface SMILFile {
   smil?: {
     body?: Array<{
-      seq?: Array<{ par?: SMILPar[] }>;
+      seq?: Array<{
+        $?: { id?: string; 'epub:textref'?: string; 'epub:type'?: string };
+        par?: SMILPar[];
+      }>;
       par?: SMILPar[];
     }>;
   };
@@ -66,6 +69,7 @@ export interface EPUBData {
   title: string;
   chapters: EPUBChapter[];
   smilFiles: Map<string, SMILFragment[]>;
+  smilSeqIds: Map<string, string>;
   audioFiles: Map<string, AudioFile>;
   manifest: OPFPackage;
 }

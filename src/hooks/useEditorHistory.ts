@@ -26,6 +26,7 @@ export const cloneEPUBData = (data: EPUBData): EPUBData => ({
       fragments.map((fragment) => ({ ...fragment })),
     ])
   ),
+  smilSeqIds: new Map(data.smilSeqIds),
   audioFiles: new Map(
     Array.from(data.audioFiles.entries()).map(([id, file]) => [
       id,

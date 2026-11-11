@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   buildSMIL,
   calculateTotalDuration,
+  toXmlId,
   updateOPFWithDuration,
 } from './smilBuilder';
 import { formatSMILDuration } from './time';
@@ -44,6 +45,29 @@ describe('calculateTotalDuration', () => {
       makeFragment({ id: 'smil1::p3', clipEnd: 2 }),
     ];
     expect(calculateTotalDuration(fragments)).toBe(7.5);
+  });
+});
+
+describe('toXmlId', () => {
+  it('leaves valid ids untouched', () => {
+    expect(toXmlId('x00-salut_xhtml_overlay')).toBe('x00-salut_xhtml_overlay');
+    expect(toXmlId('chapter1.xhtml_overlay')).toBe('chapter1.xhtml_overlay');
+    expect(toXmlId('_overlay')).toBe('_overlay');
+  });
+
+  it('prefixes ids that cannot start an XML name', () => {
+    expect(toXmlId('00-salut.xhtml_overlay')).toBe('id_00-salut.xhtml_overlay');
+    expect(toXmlId('-ch1_overlay')).toBe('id_-ch1_overlay');
+    expect(toXmlId('.hidden_overlay')).toBe('id_.hidden_overlay');
+  });
+
+  it('replaces characters an XML name cannot contain', () => {
+    expect(toXmlId('a:b c_overlay')).toBe('a_b_c_overlay');
+    expect(toXmlId('Frühstück_overlay')).toBe('Frühstück_overlay');
+  });
+
+  it('falls back when nothing usable is left', () => {
+    expect(toXmlId('')).toBe('overlay');
   });
 });
 

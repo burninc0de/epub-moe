@@ -66,6 +66,13 @@ describe('EPUBParser.parse', () => {
     expect(data.audioFiles.size).toBe(1);
   });
 
+  it('keeps each SMIL seq id so export can reuse it', async () => {
+    const parser = new EPUBParser(buildZip());
+    const data = await parser.parse();
+
+    expect(data.smilSeqIds.get('smil1')).toBe('seq1');
+  });
+
   it('parses SMIL clock times in both formats', async () => {
     const parser = new EPUBParser(buildZip());
     const data = await parser.parse();

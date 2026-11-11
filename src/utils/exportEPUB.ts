@@ -1,7 +1,7 @@
 import JSZip from 'jszip';
 import { parseString } from 'xml2js';
 import { EPUBParser } from './epubParser';
-import { buildSMIL, calculateTotalDuration, updateOPFWithDuration } from './smilBuilder';
+import { buildSMIL, calculateTotalDuration, toXmlId, updateOPFWithDuration } from './smilBuilder';
 import { EPUBData, ContainerXML } from '../types/epub';
 
 export const exportEPUB = async (epubData: EPUBData, originalZip: JSZip): Promise<Blob> => {
@@ -20,7 +20,7 @@ export const exportEPUB = async (epubData: EPUBData, originalZip: JSZip): Promis
       const smilPath = basePath + manifestItem.$.href;
       const smilParts = manifestItem.$.href.split('/');
       const textRef = smilParts.length > 1 ? `../Text/${chapter.href.split('/').pop()}` : chapter.href;
-      const seqId = `${chapter.href.split('/').pop()}_overlay`;
+      const seqId = epubData.smilSeqIds.get(id) ?? toXmlId(`${chapter.href.split('/').pop()}_overlay`);
 
       // Parse chapter HTML and collect all element IDs
       const parserDOM = new DOMParser();
