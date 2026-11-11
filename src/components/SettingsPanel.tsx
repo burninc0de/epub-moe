@@ -237,6 +237,20 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
         </a>
         <span className="text-gray-700">|</span>
         <span>v{version}</span>
+        {__BUILD_COMMIT__ && (
+          <>
+            <span className="text-gray-700">|</span>
+            <a
+              href={`https://github.com/burninc0de/epub-moe/commit/${__BUILD_COMMIT__}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Commit this build was made from"
+              className="tabular-nums hover:text-gray-300 transition-colors"
+            >
+              {__BUILD_COMMIT__}
+            </a>
+          </>
+        )}
       </div>
     </div>
   );

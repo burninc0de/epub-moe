@@ -524,6 +524,15 @@ test('the timing format toggles between clock and SMIL seconds', async ({ page }
   await expect(page.getByText('Start Time').locator('..').locator('input')).toHaveValue('0.270s');
 });
 
+test('the settings footer links the build commit', async ({ page }) => {
+  await loadEPUB(page);
+
+  await page.getByTitle('Settings').click();
+  const commit = page.getByTitle('Commit this build was made from');
+  await expect(commit).toHaveText(/^[0-9a-f]{7}$/);
+  await expect(commit).toHaveAttribute('href', /^https:\/\/github\.com\/burninc0de\/epub-moe\/commit\/[0-9a-f]{7}$/);
+});
+
 test('right-clicking an audio chapter offers to mark it finished', async ({ page }) => {
   await loadEPUB(page);
 
