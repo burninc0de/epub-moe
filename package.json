@@ -28,7 +28,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "npm run lint && npm run build && npm run test:fixture && npm run test:unit && npm run test:playwright",
-    "test:fixture": "node scripts/ensure-fixture.mjs",
+    "test:fixture": "node scripts/ensure-fixture.mjs && node scripts/build-multi-audio-fixture.mjs",
     "test:unit": "vitest run",
     "test:playwright": "playwright test"
   },
