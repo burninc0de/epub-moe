@@ -5,6 +5,7 @@ import path from 'node:path';
 import JSZip from 'jszip';
 
 const FIXTURE = path.join(process.cwd(), 'dld9_tb_preview.epub');
+const MULTI_AUDIO_FIXTURE = path.join(process.cwd(), 'dld9_split_audio.epub');
 
 test.beforeAll(() => {
   test.skip(!existsSync(FIXTURE), `fixture not found: ${FIXTURE}. Drop a talking-book EPUB there to run the smoke tests.`);
@@ -536,6 +537,28 @@ test('the build commit is shown on the upload page and in settings', async ({ pa
 
   await page.getByTitle('Settings').click();
   await expect(page.getByTitle('Commit this build was made from')).toHaveText(/^[0-9a-f]{7}$/);
+});
+
+test('a chapter spanning several audio files is flagged as unsupported', async ({ page }) => {
+  test.skip(!existsSync(MULTI_AUDIO_FIXTURE), 'multi-audio fixture not built');
+
+  await page.goto('/');
+  await page.setInputFiles('input[type="file"][accept=".epub"]', MULTI_AUDIO_FIXTURE);
+  await expect(page.getByRole('button', { name: 'Export EPUB' })).toBeVisible();
+
+  // Flagged in the sidebar before any fragment is selected.
+  await expect(page.getByTitle('This chapter plays more than one audio file')).toBeVisible();
+  await expect(page.getByText('This chapter plays several audio files')).toBeVisible();
+
+  // And in the editor once a fragment is picked.
+  await page.locator('[data-fragment-id]').nth(52).click();
+  await expect(page.getByText('This chapter plays several audio files')).toBeVisible();
+
+  // A single-audio book shows neither.
+  await page.setInputFiles('input[type="file"][accept=".epub"]', FIXTURE);
+  await expect(page.getByRole('button', { name: 'Export EPUB' })).toBeVisible();
+  await page.locator('[data-fragment-id]').first().click();
+  await expect(page.getByText('This chapter plays several audio files')).toHaveCount(0);
 });
 
 test('right-clicking an audio chapter offers to mark it finished', async ({ page }) => {

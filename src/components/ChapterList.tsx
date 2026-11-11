@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Volume2, CheckCircle2, Copy, CopyCheck } from 'lucide-react';
+import { Volume2, CheckCircle2, Copy, CopyCheck, AlertTriangle } from 'lucide-react';
 import { EPUBChapter, ChapterLabelMode } from '../types/epub';
 import { readDoneChapters, toggleDoneChapter } from '../utils/chapterProgress';
 import { chapterMenuActions, type ChapterMenuActionId } from '../utils/chapterMenu';
@@ -13,6 +13,7 @@ interface ChapterListProps {
   onChapterSelect: (chapterId: string) => void;
   onlyAudioChapters?: boolean;
   labelMode?: ChapterLabelMode;
+  multiAudioChapterIds?: Set<string>;
 }
 
 interface MenuState {
@@ -35,6 +36,7 @@ export const ChapterList: React.FC<ChapterListProps> = ({
   onChapterSelect,
   onlyAudioChapters = false,
   labelMode = 'title',
+  multiAudioChapterIds,
 }) => {
   const visibleChapters = onlyAudioChapters ? chapters.filter(c => c.mediaOverlay) : chapters;
 
@@ -139,6 +141,11 @@ export const ChapterList: React.FC<ChapterListProps> = ({
               }`}
             >
               <span className="flex-1 min-w-0 truncate text-left">{labelFor(chapter)}</span>
+              {multiAudioChapterIds?.has(chapter.id) && (
+                <span className="flex-shrink-0" title="This chapter plays more than one audio file">
+                  <AlertTriangle className="w-3.5 h-3.5 text-gray-400" />
+                </span>
+              )}
               {chapter.mediaOverlay && (
                 isDone ? (
                   <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0 text-emerald-400" />

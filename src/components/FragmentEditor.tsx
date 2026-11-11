@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Clock, Minus, Plus, Trash2 } from 'lucide-react';
+import { Clock, Minus, Plus, Trash2, AlertTriangle } from 'lucide-react';
 import { SMILFragment, TimeDisplayFormat } from '../types/epub';
 import { formatTimeInSeconds, formatTimeWithMs, parseTimeInput } from '../utils/time';
 import { Button, IconButton, PanelHeader, SectionLabel, FieldLabel, TextInput } from './ui';
@@ -8,6 +8,7 @@ interface FragmentEditorProps {
   selectedFragment: SMILFragment | null;
   timeDisplayFormat: TimeDisplayFormat;
   onTimeDisplayFormatChange: (value: TimeDisplayFormat) => void;
+  hasMultipleAudioFiles: boolean;
   nudgeStep: number;
   onFragmentUpdate: (fragmentId: string, updates: Partial<SMILFragment>) => void;
   onFragmentDelete: (fragmentId: string) => void;
@@ -19,6 +20,7 @@ export const FragmentEditor: React.FC<FragmentEditorProps> = ({
   selectedFragment,
   timeDisplayFormat,
   onTimeDisplayFormatChange,
+  hasMultipleAudioFiles,
   nudgeStep,
   onFragmentUpdate,
   onFragmentDelete,
@@ -62,7 +64,20 @@ export const FragmentEditor: React.FC<FragmentEditorProps> = ({
     <div className="bg-panel border-l border-line flex flex-col">
       <PanelHeader title="Fragment Editor" />
 
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-6">
+        {hasMultipleAudioFiles && (
+          <div className="flex gap-2.5 rounded-md border border-line bg-raised p-3">
+            <AlertTriangle className="w-4 h-4 flex-shrink-0 text-gray-400 mt-0.5" />
+            <div>
+              <p className="text-xs font-medium text-gray-100">This chapter plays several audio files</p>
+              <p className="text-xs text-gray-400 mt-1">
+                epub-moe only loads the first one, so fragments past the switch are shown against the
+                wrong timeline. Exporting without editing leaves their timings as they are.
+              </p>
+            </div>
+          </div>
+        )}
+
         {selectedFragment ? (
           <div className="space-y-6">
             <section>

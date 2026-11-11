@@ -11,6 +11,7 @@ import { FragmentSpacing, isValidFragmentSpacing, ChapterLabelMode, isValidChapt
 import { Upload, Loader2, PanelRightOpen, PanelRightClose, PanelLeftOpen, PanelLeftClose, Feather, Settings, Undo2, Redo2 } from 'lucide-react';
 import { Button, IconButton, Modal } from './components/ui';
 import { DEFAULT_CODE_THEME_ID } from './utils/codeThemes';
+import { playsMultipleAudioFiles } from './utils/audioSources';
 import { RegionColorStyle } from './components/WaveformViewer';
 
 declare const __AUTO_LOAD_EPUB__: string;
@@ -449,6 +450,14 @@ const App: React.FC = () => {
   const currentChapter = getCurrentChapter();
   const fragments = getCurrentFragments();
   const audioBlob = currentAudioBlob;
+  const multiAudioChapterIds = new Set(
+    (epubData?.chapters ?? [])
+      .filter((chapter) => {
+        const overlay = chapter.mediaOverlay && epubData?.smilFiles.get(chapter.mediaOverlay);
+        return overlay ? playsMultipleAudioFiles(overlay) : false;
+      })
+      .map((chapter) => chapter.id)
+  );
 
   return (
     <div className="h-screen flex flex-col bg-base text-gray-100 overflow-hidden">
@@ -573,6 +582,7 @@ const App: React.FC = () => {
                 onChapterSelect={setSelectedChapter}
                 onlyAudioChapters={onlyAudioChapters}
                 labelMode={chapterLabelMode}
+                multiAudioChapterIds={multiAudioChapterIds}
               />
             </div>
 
@@ -628,6 +638,7 @@ const App: React.FC = () => {
                 selectedFragment={selectedFragment}
                 timeDisplayFormat={timeDisplayFormat}
                 onTimeDisplayFormatChange={handleTimeDisplayFormatChange}
+                hasMultipleAudioFiles={currentChapter ? multiAudioChapterIds.has(currentChapter.id) : false}
                 nudgeStep={nudgeStep}
                 onFragmentUpdate={updateFragment}
                 onFragmentDelete={deleteFragment}
