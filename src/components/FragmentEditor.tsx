@@ -7,6 +7,7 @@ import { Button, IconButton, PanelHeader, SectionLabel, FieldLabel, TextInput } 
 interface FragmentEditorProps {
   selectedFragment: SMILFragment | null;
   timeDisplayFormat: TimeDisplayFormat;
+  onTimeDisplayFormatChange: (value: TimeDisplayFormat) => void;
   nudgeStep: number;
   onFragmentUpdate: (fragmentId: string, updates: Partial<SMILFragment>) => void;
   onFragmentDelete: (fragmentId: string) => void;
@@ -17,6 +18,7 @@ interface FragmentEditorProps {
 export const FragmentEditor: React.FC<FragmentEditorProps> = ({
   selectedFragment,
   timeDisplayFormat,
+  onTimeDisplayFormatChange,
   nudgeStep,
   onFragmentUpdate,
   onFragmentDelete,
@@ -64,7 +66,28 @@ export const FragmentEditor: React.FC<FragmentEditorProps> = ({
         {selectedFragment ? (
           <div className="space-y-6">
             <section>
-              <SectionLabel className="mb-3">Timing</SectionLabel>
+              <div className="flex items-center justify-between mb-3">
+                <SectionLabel>Timing</SectionLabel>
+                <div className="inline-flex rounded overflow-hidden border border-line">
+                  {([
+                    { value: 'clock', label: 'm:ss', title: 'Minutes and seconds' },
+                    { value: 'seconds', label: 'sec', title: 'Plain seconds, as written to the SMIL' },
+                  ] as const).map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => onTimeDisplayFormatChange(option.value)}
+                      title={option.title}
+                      className={`px-1.5 py-0.5 text-[10px] font-medium transition-colors ${
+                        timeDisplayFormat === option.value
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-base text-gray-400 hover:bg-raised'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <div className="space-y-3">
                 <div>
                   <FieldLabel>Start Time</FieldLabel>

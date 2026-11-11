@@ -100,11 +100,6 @@ export type ChapterLabelMode = 'title' | 'filename';
 
 export type TimeDisplayFormat = 'clock' | 'seconds';
 
-export const TIME_DISPLAY_OPTIONS: { value: TimeDisplayFormat; label: string }[] = [
-  { value: 'clock', label: '1:23.456' },
-  { value: 'seconds', label: '83.456s' },
-];
-
 export const isValidTimeDisplayFormat = (value: string | null): value is TimeDisplayFormat =>
   value === 'clock' || value === 'seconds';
 

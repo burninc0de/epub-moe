@@ -1,7 +1,7 @@
 import React from 'react';
 import { Github } from 'lucide-react';
 import { version } from '../../package.json';
-import { FragmentSpacing, FRAGMENT_SPACING_OPTIONS, ChapterLabelMode, CHAPTER_LABEL_OPTIONS, TimeDisplayFormat, TIME_DISPLAY_OPTIONS } from '../types/epub';
+import { FragmentSpacing, FRAGMENT_SPACING_OPTIONS, ChapterLabelMode, CHAPTER_LABEL_OPTIONS } from '../types/epub';
 import { CODE_THEMES } from '../utils/codeThemes';
 import { RegionColorStyle } from './WaveformViewer';
 import { Button, Select, TextInput } from './ui';
@@ -17,8 +17,6 @@ interface SettingsPanelProps {
   onPreserveSmilMetadataChange: (value: boolean) => void;
   chapterLabelMode: ChapterLabelMode;
   onChapterLabelModeChange: (value: ChapterLabelMode) => void;
-  timeDisplayFormat: TimeDisplayFormat;
-  onTimeDisplayFormatChange: (value: TimeDisplayFormat) => void;
   codeThemeId: string;
   onCodeThemeChange: (value: string) => void;
   regionColorStyle: RegionColorStyle;
@@ -59,8 +57,6 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   onPreserveSmilMetadataChange,
   chapterLabelMode,
   onChapterLabelModeChange,
-  timeDisplayFormat,
-  onTimeDisplayFormatChange,
   codeThemeId,
   onCodeThemeChange,
   regionColorStyle,
@@ -133,31 +129,6 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                   index > 0 ? 'border-l border-gray-700' : ''
                 } ${
                   chapterLabelMode === option.value
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-base text-gray-300 hover:bg-raised'
-                }`}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <h3 className="text-sm font-medium text-gray-100">Timing format</h3>
-          <p className="text-xs text-gray-500 mt-0.5 mb-2">
-            How start and end times appear in the Fragment Editor. Seconds match the
-            values written to the SMIL file.
-          </p>
-          <div className="inline-flex rounded-md overflow-hidden border border-gray-700">
-            {TIME_DISPLAY_OPTIONS.map((option, index) => (
-              <button
-                key={option.value}
-                onClick={() => onTimeDisplayFormatChange(option.value)}
-                className={`px-3 py-1.5 text-xs font-medium transition-colors tabular-nums ${
-                  index > 0 ? 'border-l border-gray-700' : ''
-                } ${
-                  timeDisplayFormat === option.value
                     ? 'bg-blue-600 text-white'
                     : 'bg-base text-gray-300 hover:bg-raised'
                 }`}

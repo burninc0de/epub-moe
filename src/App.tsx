@@ -627,6 +627,7 @@ const App: React.FC = () => {
               <FragmentEditor
                 selectedFragment={selectedFragment}
                 timeDisplayFormat={timeDisplayFormat}
+                onTimeDisplayFormatChange={handleTimeDisplayFormatChange}
                 nudgeStep={nudgeStep}
                 onFragmentUpdate={updateFragment}
                 onFragmentDelete={deleteFragment}
@@ -679,8 +680,6 @@ const App: React.FC = () => {
             onShowStatusBarChange={handleShowStatusBarChange}
             chapterLabelMode={chapterLabelMode}
             onChapterLabelModeChange={handleChapterLabelModeChange}
-            timeDisplayFormat={timeDisplayFormat}
-            onTimeDisplayFormatChange={handleTimeDisplayFormatChange}
             nudgeStep={nudgeStep}
             onNudgeStepChange={handleNudgeStepChange}
             defaultNudgeStep={DEFAULT_NUDGE_STEP}
