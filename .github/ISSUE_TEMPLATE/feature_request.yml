@@ -5,16 +5,16 @@ body:
   - type: markdown
     attributes:
       value: |
-        **Start with the problem.** Tell us what you are trying to do, what fails today, and what you expected instead. A concrete example is more useful than a feature name.
+        **Start with the problem.** What are you trying to accomplish, and what does the current workflow force you to do instead? A concrete example is more useful than a feature name.
 
         epub-moe fine-tunes timing in structurally sound media overlays. Please read the [readme](https://github.com/burninc0de/epub-moe#what-this-does-well) before filing: structural repair (shuffled audio, chapters spread over several audio files, broken SMIL) is upstream work, not a feature request.
 
   - type: textarea
     id: problem
     attributes:
-      label: What are you trying to do, and what fails today?
-      description: Describe the workflow and the concrete failure, with an example if you have one.
-      placeholder: "I load a Storyteller EPUB, … but … happens. I expected …"
+      label: What are you trying to do?
+      description: Describe the workflow, what you do today instead, and why that isn't good enough. An example helps.
+      placeholder: "I want to … Today I … which means …"
     validations:
       required: true
 
@@ -24,9 +24,7 @@ body:
       label: Before you file
       description: These are the assumptions epub-moe's diagnostics rely on.
       options:
-        - label: The EPUB plays correctly in an EPUB 3 reader before I open it in epub-moe.
-          required: true
-        - label: I have read the readme's scope and input assumptions (one audio file per chapter, resolvable text references, contiguous or deliberately spaced timings).
+        - label: "My book matches epub-moe's input assumptions: one audio file per chapter, SMIL text references that resolve, and fragments that are already roughly aligned."
           required: true
 
   - type: input
@@ -41,9 +39,9 @@ body:
   - type: textarea
     id: reproduction
     attributes:
-      label: Can you share the book or a minimal reproduction?
-      description: A failing EPUB (or the OPF, the affected SMIL, and one chapter's audio) is what makes a fix possible. Say what you can share here; do not attach copyrighted material to the issue — email the maintainer if needed.
-      placeholder: "I can share the EPUB / the OPF and SMIL / a minimal repro / only a description"
+      label: Can you share a book or an example where this matters?
+      description: A book (or the OPF, the affected SMIL, and one chapter's audio) makes the request actionable. Say what you can share; do not attach copyrighted material — email the maintainer if needed.
+      placeholder: "I can share the EPUB / the OPF and SMIL / a minimal sample / only a description"
     validations:
       required: true
 
@@ -66,4 +64,4 @@ body:
   - type: markdown
     attributes:
       value: |
-        **Please note:** this is a personal tool. Feature requests are welcome, but the maintainer is a writer first and developer second and may not be able to implement everything. Requests without a concrete failure or a reproduction may be closed.
+        **Please note:** this is a personal tool. Feature requests are welcome, but the maintainer is a writer first and developer second and may not be able to implement everything. Requests without a concrete use case or a sample may be closed.
