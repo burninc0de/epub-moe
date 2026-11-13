@@ -6,8 +6,10 @@ A React-based tool for fine-tuning synchronized text and audio in EPUB files (ak
 
 I built epub-moe because I needed surgical precision when creating German language learning books with synchronized audio. Existing tools like [Storyteller](https://gitlab.com/storyteller-platform/storyteller) are excellent for initial auto-synchronization, but sometimes you need more granual control, especially for educational content where precise timing matters.
 
-> [!NOTE]
-> This tool is designed for **fine-tuning existing media overlays**, not creating them from scratch.
+> [!IMPORTANT]
+> epub-moe fine-tunes timing in **media overlays that already work**. It is not a repair tool for broken structure or broken alignment.
+>
+> It assumes one audio file per chapter, SMIL text references that resolve, and fragments that are already roughly aligned.
 
 ![Main Workspace](screenshots/main-workspace.png)
 
@@ -29,8 +31,9 @@ You can access the latest build directly in your browser at [https://epub-moe.pa
 ## What This Doesn't Do
 
 - **Auto-synchronization**: Use [Storyteller](https://gitlab.com/storyteller-platform/storyteller) or similar tools first
+- **Repairing structurally broken books**: shuffled audio, chapters spread over several audio files, or text references that no longer resolve. The app detects some of these and disables diagnostics for those chapters; it does not fix them
 - **EPUB creation**: Assumes you already have an EPUB with basic media overlay structure
-- **Full-featured EPUB editing**: This is a personal tool that solved my specific problem. It is narrowly focused by design. For complete EPUB authoring/editing I recommend using [Sigil](https://sigil-ebook.com/)
+- **Full-featured EPUB editing**: This is a personal tool that solved my specific problem. It is narrowly focused by design. The inline HTML editor is for small text and highlight fixes, not structural repair. For complete EPUB authoring/editing I recommend using [Sigil](https://sigil-ebook.com/)
 - **Enterprise features**: No user management, cloud sync, collaboration, etc.
 
 ## Built By
