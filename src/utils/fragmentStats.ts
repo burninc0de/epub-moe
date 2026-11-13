@@ -42,6 +42,11 @@ export interface FragmentStatsOptions {
    * not two fragments claiming the same audio. Default 0.05 (50ms).
    */
   overlapToleranceSeconds?: number;
+  /**
+   * False when a chapter plays several audio files. Their times live on
+   * different timelines, so comparing them would invent overlaps.
+   */
+  hasSharedTimeline?: boolean;
 }
 
 /** Collapse markup-free whitespace so line breaks do not compound in the table. */
@@ -110,6 +115,7 @@ export const computeChapterStats = (
   options: FragmentStatsOptions = {}
 ): ChapterStats => {
   const overlapTolerance = options.overlapToleranceSeconds ?? 0.05;
+  const hasSharedTimeline = options.hasSharedTimeline ?? true;
   const cutFlags = new Map(
     (options.alignment?.flagged ?? []).map((flag) => [flag.id, cutFlag(flag)] as const)
   );
@@ -130,7 +136,7 @@ export const computeChapterStats = (
       });
     }
 
-    if (fragment.clipBegin < furthestEnd - overlapTolerance) {
+    if (hasSharedTimeline && fragment.clipBegin < furthestEnd - overlapTolerance) {
       flags.push({
         kind: 'overlap',
         severity: 'error',

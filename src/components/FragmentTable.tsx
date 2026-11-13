@@ -43,6 +43,7 @@ interface FragmentTableProps {
   hasAudio?: boolean;
   onApplyTimeOffset?: (fromTime: number, offsetSeconds: number) => void;
   onNudgeFragmentStart?: (fragmentId: string, deltaSeconds: number) => void;
+  multiAudio?: boolean;
   autoFollow?: boolean;
 }
 
@@ -55,6 +56,7 @@ export const FragmentTable: React.FC<FragmentTableProps> = ({
   hasAudio = false,
   onApplyTimeOffset,
   onNudgeFragmentStart,
+  multiAudio = false,
   autoFollow = true,
 }) => {
   const [onlyFlagged, setOnlyFlagged] = useState(() => localStorage.getItem(ONLY_FLAGGED_KEY) === 'true');
@@ -68,8 +70,9 @@ export const FragmentTable: React.FC<FragmentTableProps> = ({
     () =>
       computeChapterStats(fragments, fragmentTexts(fragments, chapterText), {
         alignment: analysis,
+        hasSharedTimeline: !multiAudio,
       }),
-    [fragments, chapterText, analysis]
+    [fragments, chapterText, analysis, multiAudio]
   );
 
   const visibleRows = useMemo(
@@ -82,7 +85,7 @@ export const FragmentTable: React.FC<FragmentTableProps> = ({
   }, [onlyFlagged]);
 
   useEffect(() => {
-    if (!decodedAudio || fragments.length === 0) {
+    if (multiAudio || !decodedAudio || fragments.length === 0) {
       setAnalysis(null);
       setIsAnalyzing(false);
       return;
@@ -102,7 +105,7 @@ export const FragmentTable: React.FC<FragmentTableProps> = ({
       }
     }, ANALYSIS_DEBOUNCE_MS);
     return () => window.clearTimeout(timeout);
-  }, [decodedAudio, fragments]);
+  }, [decodedAudio, fragments, multiAudio]);
 
   useEffect(() => {
     if (!selectedFragment || !autoFollow) return;
@@ -124,7 +127,9 @@ export const FragmentTable: React.FC<FragmentTableProps> = ({
     ? 'No fragments'
     : hasStructuralFlags
       ? `${summary.flagged} flagged`
-      : audioCuts > 0
+      : multiAudio
+        ? 'Diagnostics unavailable'
+        : audioCuts > 0
         ? audioCuts === 1
           ? '1 needs a listen'
           : `${audioCuts} need a listen`
@@ -178,6 +183,12 @@ export const FragmentTable: React.FC<FragmentTableProps> = ({
           <Filter className="w-4 h-4" />
         </IconButton>
       </PanelHeader>
+
+      {multiAudio && (
+        <div className="flex-shrink-0 border-b border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-300">
+          This chapter plays several audio files. Audio diagnostics are disabled for this chapter.
+        </div>
+      )}
 
       <div ref={scrollRef} className="flex-1 overflow-auto">
         {visibleRows.length === 0 ? (

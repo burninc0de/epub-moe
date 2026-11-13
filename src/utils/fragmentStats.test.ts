@@ -124,6 +124,13 @@ describe('computeChapterStats', () => {
     expect(messages).toEqual(['Overlaps fragment 1 by 7000ms']);
   });
 
+  it('does not compare timings when the chapter has no shared timeline', () => {
+    const fragments = [fragment('f1', 0, 5), fragment('f2', 2, 8)];
+    const { rows } = computeChapterStats(fragments, texts([]), { hasSharedTimeline: false });
+
+    expect(rows.every((row) => !row.flags.some((flag) => flag.kind === 'overlap'))).toBe(true);
+  });
+
   it('counts overlaps as errors in the summary', () => {
     const { summary } = computeChapterStats([fragment('f1', 0, 5), fragment('f2', 3, 6)], texts([]));
 

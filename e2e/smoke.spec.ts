@@ -645,6 +645,12 @@ test('a chapter spanning several audio files is flagged as unsupported', async (
   await page.locator('[data-fragment-id]').nth(52).click();
   await expect(page.getByText('This chapter plays several audio files')).toBeVisible();
 
+  // The table disables audio diagnostics instead of comparing across files.
+  await page.getByTitle(/Table view/).click();
+  await expect(page.getByText('Diagnostics unavailable')).toBeVisible();
+  await expect(page.getByText('Audio diagnostics are disabled for this chapter')).toBeVisible();
+  await page.getByTitle('Text view').click();
+
   // A single-audio book shows neither.
   await page.setInputFiles('input[type="file"][accept=".epub"]', FIXTURE);
   await expect(page.getByRole('button', { name: 'Export EPUB' })).toBeVisible();

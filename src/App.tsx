@@ -659,6 +659,7 @@ const App: React.FC = () => {
               hasAudio={!!audioBlob}
               onApplyTimeOffset={applyTimeOffset}
               onNudgeFragmentStart={nudgeFragmentStart}
+              multiAudio={!!selectedChapter && multiAudioChapterIds.has(selectedChapter)}
               autoFollow={autoFollow}
             />
           ) : (
