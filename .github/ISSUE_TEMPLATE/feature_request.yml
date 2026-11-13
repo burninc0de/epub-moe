@@ -27,21 +27,16 @@ body:
         - label: "My book matches epub-moe's input assumptions: one audio file per chapter, SMIL text references that resolve, and fragments that are already roughly aligned."
           required: true
 
-  - type: input
-    id: producer
+  - type: dropdown
+    id: sample
     attributes:
-      label: What produced the EPUB, and with which version?
-      description: For example Storyteller 3.0.0-beta.59, Sigil, or hand-built.
-      placeholder: "Storyteller 3.0.0-beta.59"
-    validations:
-      required: true
-
-  - type: textarea
-    id: reproduction
-    attributes:
-      label: Can you share a book or an example where this matters?
-      description: A book (or the OPF, the affected SMIL, and one chapter's audio) makes the request actionable. Say what you can share; do not attach copyrighted material — email the maintainer if needed.
-      placeholder: "I can share the EPUB / the OPF and SMIL / a minimal sample / only a description"
+      label: What can you share?
+      description: A book, the OPF + affected SMIL, or a minimal sample makes the request actionable. Do not attach copyrighted material — email the maintainer if needed.
+      options:
+        - I can share the EPUB
+        - I can share the OPF and the affected SMIL
+        - I can share a minimal sample
+        - I can describe it, but cannot share files
     validations:
       required: true
 
