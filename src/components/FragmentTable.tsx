@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AlertCircle, AlertTriangle, Filter } from 'lucide-react';
-import { EPUBChapter, SMILFragment } from '../types/epub';
-import { formatTimeWithMs } from '../utils/time';
+import { EPUBChapter, SMILFragment, TimeDisplayFormat } from '../types/epub';
+import { formatTimeInSeconds, formatTimeWithMs } from '../utils/time';
 import {
   analyzeAlignment,
   boundariesFromFragments,
@@ -41,6 +41,7 @@ interface FragmentTableProps {
   onFragmentSelect: (fragment: SMILFragment) => void;
   decodedAudio?: AudioBuffer | null;
   hasAudio?: boolean;
+  timeDisplayFormat?: TimeDisplayFormat;
   onApplyTimeOffset?: (fromTime: number, offsetSeconds: number) => void;
   onNudgeFragmentStart?: (fragmentId: string, deltaSeconds: number) => void;
   multiAudio?: boolean;
@@ -54,6 +55,7 @@ export const FragmentTable: React.FC<FragmentTableProps> = ({
   onFragmentSelect,
   decodedAudio = null,
   hasAudio = false,
+  timeDisplayFormat = 'clock',
   onApplyTimeOffset,
   onNudgeFragmentStart,
   multiAudio = false,
@@ -63,6 +65,8 @@ export const FragmentTable: React.FC<FragmentTableProps> = ({
   const [analysis, setAnalysis] = useState<AlignmentAnalysis | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const formatTime = timeDisplayFormat === 'seconds' ? formatTimeInSeconds : formatTimeWithMs;
 
   const chapterText = useMemo(() => textByElementId(chapter?.content ?? ''), [chapter?.content]);
 
@@ -238,8 +242,8 @@ export const FragmentTable: React.FC<FragmentTableProps> = ({
                   >
                     <td className="px-2 py-1 text-right tabular-nums text-gray-600">{row.index + 1}</td>
                     <td className="px-2 py-1 truncate text-gray-200">{row.text || <span className="text-gray-600">—</span>}</td>
-                    <td className="px-2 py-1 text-right tabular-nums text-gray-400">{formatTimeWithMs(row.start)}</td>
-                    <td className="px-2 py-1 text-right tabular-nums text-gray-400">{formatTimeWithMs(row.end)}</td>
+                    <td className="px-2 py-1 text-right tabular-nums text-gray-400">{formatTime(row.start)}</td>
+                    <td className="px-2 py-1 text-right tabular-nums text-gray-400">{formatTime(row.end)}</td>
                     <td className="px-2 py-1 text-right tabular-nums text-gray-400">{row.duration.toFixed(2)}s</td>
                     <td className="px-2 py-1">
                       {primaryFlag && (

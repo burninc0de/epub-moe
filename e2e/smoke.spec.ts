@@ -91,7 +91,7 @@ test('clicking a fragment selects it and shows its timing', async ({ page }) => 
   await expect(page.getByText('End Time').locator('..').locator('input')).toHaveValue('0:04.266');
 });
 
-test('table view lists fragments with timing, pace, and problems', async ({ page }) => {
+test('table view lists fragments with timings and problems', async ({ page }) => {
   await loadEPUB(page);
 
   await page.getByTitle(/Table view/).click();
@@ -597,6 +597,13 @@ test('the timing format toggles between clock and SMIL seconds', async ({ page }
   await page.getByTitle('Plain seconds, as written to the SMIL').click();
   await expect(startInput).toHaveValue('0.270s');
   await expect(endInput).toHaveValue('4.266s');
+
+  // The table follows the same setting.
+  await page.getByTitle(/Table view/).click();
+  const row = page.locator('tbody tr').first();
+  await expect(row.locator('td').nth(2)).toHaveText('0.270s');
+  await expect(row.locator('td').nth(3)).toHaveText('4.266s');
+  await page.getByTitle('Text view').click();
 
   // Switching format alone must not look like an edit.
   await expect(page.getByRole('button', { name: 'Apply', exact: true })).toBeDisabled();

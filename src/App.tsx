@@ -562,7 +562,7 @@ const App: React.FC = () => {
           <IconButton
             onClick={() => handleCenterViewChange('table')}
             active={centerView === 'table'}
-            title="Table view: fragments with timing, pace, and problems"
+            title="Table view: fragments with timings and problems"
           >
             <Table2 size={16} />
           </IconButton>
@@ -657,6 +657,7 @@ const App: React.FC = () => {
               onFragmentSelect={handleFragmentSelect}
               decodedAudio={decodedAudio}
               hasAudio={!!audioBlob}
+              timeDisplayFormat={timeDisplayFormat}
               onApplyTimeOffset={applyTimeOffset}
               onNudgeFragmentStart={nudgeFragmentStart}
               multiAudio={!!selectedChapter && multiAudioChapterIds.has(selectedChapter)}
